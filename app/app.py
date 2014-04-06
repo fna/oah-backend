@@ -1,10 +1,18 @@
-from flask import Flask
+from flask import Flask, request, jsonify
+
+from rate_checker import RateChecker
 
 app = Flask('OaH Backend')
 
 
 @app.route('/')
 def index():
-    return " Test: working "
+    return " Request Args: %s " % request.args
 
-app.run()
+
+@app.route('/rate-checker')
+def rate_checker():
+    rc = RateChecker()
+    return jsonify(**rc.process_request(request.args))
+
+app.run(debug=True)
