@@ -15,4 +15,6 @@ def rate_checker():
     rc = RateChecker()
     return jsonify(**rc.process_request(request.args))
 
-app.run(debug=True)
+if __name__ == '__main__':
+    app.debug = True
+    app.run(port=5000)

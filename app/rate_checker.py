@@ -15,6 +15,14 @@ def is_state(value):
     else:
         raise Exception('Not a state abbreviation')
 
+
+def is_str(value):
+    """Check that <value> is a string"""
+    if isinstance(value, str):
+        return value
+    else:
+        raise Exception('Not a string')
+
 # Serves two purposes: a simple parameters check
 # and a white list of accepted parameters
 
@@ -26,7 +34,7 @@ PARAMETERS = {
         20000,
     ],
     'loan_type': [
-        str,
+        is_str,
         'There was an error processing value |%s| for loan_type parameter',
         '30 year fixed',
     ],
@@ -192,7 +200,7 @@ class RateChecker(object):
                 row['r_planid'] not in result or
                 result[row['r_planid']]['r_totalpoints'] > row['r_totalpoints'] or
                 (result[row['r_planid']]['r_totalpoints'] == row['r_totalpoints'] and
-                result[row['r_planid']]['r_lock'] > row['r_lock'])
+                 result[row['r_planid']]['r_lock'] > row['r_lock'])
             ):
                 result[row['r_planid']] = row
         data = {}
