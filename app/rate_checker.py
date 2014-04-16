@@ -2,63 +2,7 @@ import psycopg2
 import psycopg2.extras
 import os
 
-STATE_ABBR = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS',
-              'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS, MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC',
-              'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
-              'DC']
-
-
-def is_state(value):
-    """Check that <value> is one of the USA state abbreviations."""
-    if value.upper() in STATE_ABBR:
-        return value.upper()
-    else:
-        raise Exception('Not a state abbreviation')
-
-
-def is_str(value):
-    """Check that <value> is a string"""
-    if isinstance(value, str):
-        return value
-    else:
-        raise Exception('Not a string')
-
-# Serves two purposes: a simple parameters check
-# and a white list of accepted parameters
-
-# FIXME fico is not enough, need maxfico and minfico
-PARAMETERS = {
-    'downpayment': [
-        float,
-        'Downpayment must be a numeric value, |%s| provided',
-        20000,
-    ],
-    'loan_type': [
-        is_str,
-        'There was an error processing value |%s| for loan_type parameter',
-        '30 year fixed',
-    ],
-    'price': [
-        float,
-        'House price must be a numeric value, |%s| provided',
-        300000,
-    ],
-    'loan_amount': [
-        float,
-        'Loan amount must be a numeric value, |%s| provided',
-        280000,
-    ],
-    'state': [
-        is_state,
-        'State must be a state abbreviation, |%s| provided',
-        'DC',
-    ],
-    'fico': [
-        int,
-        'FICO must be a numeric, |%s| provided',
-        720
-    ],
-}
+from utils import PARAMETERS, STATE_ABBR
 
 
 class RateChecker(object):
@@ -74,10 +18,7 @@ class RateChecker(object):
 
     def process_request(self, args):
         """The main function which processes request and returns result back."""
-        self._clean_args(args)
-        # don't trust users
-        self.request['loan_amount'] = self.request['price'] - self.request['downpayment']
-        self.loanterm, _, self.pmttype = self.request['loan_type'].split(' ')
+        self._parse_args(args)
         self._get_data()
         return self._output()
 
@@ -96,10 +37,10 @@ class RateChecker(object):
         minltv = 720
         maxltv = 0
 
-        qry_args = [self.request['loan_amount'], self.request['loan_amount'], self.request['fico'],
-                    self.request['fico'], minltv, maxltv, self.request['state'], self.request['loan_amount'],
-                    self.request['loan_amount'], self.request['fico'], self.request['fico'], minltv, maxltv,
-                    self.request['state'], minltv, maxltv, self.request['fico'], self.request['fico'],
+        qry_args = [self.request['loan_amount'], self.request['loan_amount'], self.request['minfico'],
+                    self.request['maxfico'], minltv, maxltv, self.request['state'], self.request['loan_amount'],
+                    self.request['loan_amount'], self.request['minfico'], self.request['maxfico'], minltv, maxltv,
+                    self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
                     self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
                     self.pmttype.upper(), self.loanterm]
 
@@ -211,20 +152,34 @@ class RateChecker(object):
                 data[result[row]['final_rates']] = 1
         return data
 
-    def _clean_args(self, args):
-        """Return a dict of args, checked and cleansed."""
-        params = {}
-        for param in PARAMETERS.keys():
-            params[param] = self._check_param(param, args.get(param, 'N/A'))
+    def _parse_args(self, args):
+        """Parse API arguments"""
+        # get initial values and check types
+        params = {param: self._check_type(param, args.get(param, None)) for param in PARAMETERS.keys()}
+        self._set_ficos(params)
+        # set defaults for None values
+        for param in params.keys():
+            if not params.get(param):
+                params[param] = PARAMETERS[param][2]
+        # calculate loan_amt
+        params['loan_amount'] = params['price'] - params['downpayment']
         self.request = {param: params[param] for param in params if params[param]}
+        self.loanterm, _, self.pmttype = params['loan_type'].split(' ')
 
-    def _check_param(self, param, value):
-        """Plain check of param's type, and setting defaults."""
-        if value == 'N/A':
-            return PARAMETERS[param][2]
+    def _check_type(self, param, value):
+        """Check type of the value."""
         try:
             return PARAMETERS[param][0](value)
         except:
-            self.errors.append(PARAMETERS[param][1] % value)
-            self.status = "Error"
-            return PARAMETERS[param][2]
+            return None
+
+    def _set_ficos(self, args):
+        """Set minfico and maxfico values."""
+        if not args['minfico'] and not args['maxfico'] and args['fico']:
+            args['minfico'] = args['maxfico'] = args['fico']
+        # only one of them is set
+        elif bool(args['minfico']) != bool(args['maxfico']):
+            args['maxfico'] = args['minfico'] = args['maxfico'] if args['maxfico'] else args['minfico']
+        elif args['minfico'] and args['maxfico'] and args['minfico'] > args['maxfico']:
+            args['minfico'], args['maxfico'] = args['maxfico'], args['minfico']
+        del args['fico']
