@@ -110,7 +110,10 @@ class RateCheckerTest(unittest.TestCase):
 
     def test_parse_args__errors(self):
         """check that errors list is populated."""
-        pass
+        data = {'downpayment': 'error', 'price': 100000, 'state': 'OO'}
+        self.rco._parse_args(data)
+        self.assertIsInstance(self.rco.errors, list)
+        self.assertTrue(len(self.rco.errors) == 2)
 
     def test_check_type__invalid(self):
         """with invalid arg"""
