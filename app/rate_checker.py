@@ -168,9 +168,13 @@ class RateChecker(object):
 
     def _check_type(self, param, value):
         """Check type of the value."""
+        if value is None:
+            return None
         try:
             return PARAMETERS[param][0](value)
         except:
+            self.errors.append(PARAMETERS[param][1] % value)
+            self.status = "Error"
             return None
 
     def _set_ficos(self, args):

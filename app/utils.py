@@ -1,3 +1,6 @@
+import re
+
+
 STATE_ABBR = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS',
               'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS, MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC',
               'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
@@ -19,13 +22,25 @@ def is_str(value):
     else:
         raise Exception('Not a string')
 
+
+def is_float(value):
+    if re.match('^[0-9\.]+$', str(value)):
+        return float(value)
+    raise Exception('Not a float')
+
+
+def is_int(value):
+    if re.match('^[0-9]+$', str(value)):
+        return int(value)
+    raise Exception('Not an integer')
+
 # Serves two purposes: a simple parameters check
 # and a white list of accepted parameters
 
 # FIXME fico is not enough, need maxfico and minfico
 PARAMETERS = {
     'downpayment': [
-        float,
+        is_float,
         'Downpayment must be a numeric value, |%s| provided',
         20000,
     ],
@@ -35,12 +50,12 @@ PARAMETERS = {
         '30 year fixed',
     ],
     'price': [
-        float,
+        is_float,
         'House price must be a numeric value, |%s| provided',
         300000,
     ],
     'loan_amount': [
-        float,
+        is_float,
         'Loan amount must be a numeric value, |%s| provided',
         280000,
     ],
@@ -50,17 +65,17 @@ PARAMETERS = {
         'DC',
     ],
     'fico': [
-        int,
+        is_int,
         'FICO must be a numeric, |%s| provided',
         720
     ],
     'minfico': [
-        int,
+        is_int,
         'MinFICO must be an integer, |%s| provided',
         600
     ],
     'maxfico': [
-        int,
+        is_int,
         'MaxFICO must be an integer, |%s| provided',
         720
     ]

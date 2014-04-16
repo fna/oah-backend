@@ -7,26 +7,13 @@ import sys
 sys.path.append(os.path.join(sys.path[0], '..'))
 
 import rate_checker as rc
+from utils import PARAMETERS as params
 
 
 class RateCheckerTest(unittest.TestCase):
 
     def setUp(self):
         self.rco = rc.RateChecker()
-
-    def test_is_state__valid(self):
-        """with a valid USA state abbr."""
-        result = rc.is_state('AL')
-        self.assertEquals(result, 'AL')
-        result = rc.is_state('Ak')
-        self.assertEquals(result, 'AK')
-        result = rc.is_state('az')
-        self.assertEquals(result, 'AZ')
-
-    def test_is_state__invalid(self):
-        """with bad data."""
-        self.assertRaises(Exception, rc.is_state, 'Alabama')
-        self.assertRaises(Exception, rc.is_state, 'AM')
 
     def test_process_request(self):
         """trivial check that something's coming back."""
@@ -61,6 +48,7 @@ class RateCheckerTest(unittest.TestCase):
     def test_get_data(self):
         """_get_data"""
         print "How to initialize test database so we can test this def?"
+        print
         pass
 
     def test_calculate_results__empty(self):
@@ -89,48 +77,121 @@ class RateCheckerTest(unittest.TestCase):
         self.assertIn(3, result)
         self.assertEqual(result[3], 2)
 
-    def test_clean_args__empty(self):
+    def test_parse_args__empty(self):
         """with an empty dict"""
-        self.rco._clean_args({})
+        self.rco._parse_args({})
         self.assertIsInstance(self.rco.request, dict)
         self.assertIn('downpayment', self.rco.request)
-        self.assertEqual(self.rco.request['downpayment'], 20000)
-        self.assertIn('fico', self.rco.request)
-        self.assertEqual(self.rco.request['fico'], 720)
+        self.assertEqual(self.rco.request['downpayment'], params['downpayment'][2])
+        self.assertNotIn('fico', self.rco.request)
+        self.assertIn('minfico', self.rco.request)
+        self.assertEqual(self.rco.request['minfico'], params['minfico'][2])
+        self.assertIn('maxfico', self.rco.request)
+        self.assertEqual(self.rco.request['maxfico'], params['maxfico'][2])
         self.assertIn('loan_amount', self.rco.request)
-        self.assertEqual(self.rco.request['loan_amount'], 280000)
+        self.assertEqual(self.rco.request['loan_amount'], params['loan_amount'][2])
         self.assertIn('price', self.rco.request)
-        self.assertEqual(self.rco.request['price'], 300000)
+        self.assertEqual(self.rco.request['price'], params['price'][2])
         self.assertIn('state', self.rco.request)
-        self.assertEqual(self.rco.request['state'], 'DC')
+        self.assertEqual(self.rco.request['state'], params['state'][2])
 
-    def test_clean_args__some(self):
+    def test_parse_args__some(self):
         """not all parameters"""
         data = {'downpayment': 10000, 'price': 100000, 'state': 'va'}
-        self.rco._clean_args(data)
+        self.rco._parse_args(data)
         result = self.rco.request
         self.assertEqual(result['downpayment'], 10000)
         self.assertEqual(result['price'], 100000)
         self.assertEqual(result['state'], 'VA')
-        # weird, but the amount is (re)calculated later process_request function
-        self.assertEqual(result['loan_amount'], 280000)
+        self.assertEqual(result['loan_amount'], 90000)
         self.assertEqual(result['loan_type'], '30 year fixed')
-        self.assertEqual(result['fico'], 720)
+        self.assertEqual(result['minfico'], params['minfico'][2])
+        self.assertEqual(result['maxfico'], params['maxfico'][2])
 
-    def test_check_param__na(self):
-        """with N/A"""
-        result = self.rco._check_param('price', 'N/A')
-        self.assertEqual(result, 300000)
+    def test_parse_args__errors(self):
+        """check that errors list is populated."""
+        pass
 
-    def test_check_param__wrong_type(self):
-        """with a wrong data type"""
-        result = self.rco._check_param('loan_type', 12)
+    def test_check_type__invalid(self):
+        """with invalid arg"""
+        result = self.rco._check_type('downpayment', 'string but not a number')
+        self.assertTrue(result is None)
+        result = self.rco._check_type('downpayment', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('loan_type', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('loan_type', 30)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('price', 'string, not a number')
+        self.assertTrue(result is None)
+        result = self.rco._check_type('price', False)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('loan_amount', 'string, not a number')
+        self.assertTrue(result is None)
+        result = self.rco._check_type('loan_amount', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('state', 30)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('state', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('fico', 'string, not a number')
+        self.assertTrue(result is None)
+        result = self.rco._check_type('fico', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('fico', 30.10)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('minfico', 'stirng, not a number')
+        self.assertTrue(result is None)
+        result = self.rco._check_type('minfico', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('minfico', 30.10)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('maxfico', 'string, not a number')
+        self.assertTrue(result is None)
+        result = self.rco._check_type('maxfico', True)
+        self.assertTrue(result is None)
+        result = self.rco._check_type('maxfico', 30.10)
+        self.assertTrue(result is None)
+
+    def test_check_type__valid(self):
+        """with valid values"""
+        result = self.rco._check_type('downpayment', 10)
+        self.assertEqual(result, 10.0)
+        result = self.rco._check_type('downpayment', 10.10)
+        self.assertEqual(result, 10.10)
+        result = self.rco._check_type('loan_type', '30 year fixed')
         self.assertEqual(result, '30 year fixed')
+        result = self.rco._check_type('price', '2000')
+        self.assertEqual(result, 2000.0)
+        result = self.rco._check_type('price', 2000)
+        self.assertEqual(result, 2000.0)
+        result = self.rco._check_type('price', 2000.20)
+        self.assertEqual(result, 2000.20)
+        result = self.rco._check_type('loan_amount', '40000.99')
+        self.assertEqual(result, 40000.99)
+        result = self.rco._check_type('loan_amount', 4000)
+        self.assertEqual(result, 4000)
+        result = self.rco._check_type('loan_amount', 4000.99)
+        self.assertEqual(result, 4000.99)
+        result = self.rco._check_type('state', 'va')
+        self.assertEqual(result, 'VA')
+        result = self.rco._check_type('state', 'VA')
+        self.assertEqual(result, 'VA')
+        result = self.rco._check_type('state', 'vA')
+        self.assertEqual(result, 'VA')
+        result = self.rco._check_type('fico', '99')
+        self.assertEqual(result, 99)
+        result = self.rco._check_type('fico', 99)
+        self.assertEqual(result, 99)
+        result = self.rco._check_type('minfico', '99')
+        self.assertEqual(result, 99)
+        result = self.rco._check_type('minfico', 99)
+        self.assertEqual(result, 99)
+        result = self.rco._check_type('maxfico', '99')
+        self.assertEqual(result, 99)
+        result = self.rco._check_type('maxfico', 99)
+        self.assertEqual(result, 99)
 
-    def test_check_param__ok(self):
-        """with a valid value"""
-        result = self.rco._check_param('loan_amount', 10)
-        self.assertEqual(result, 10)
 
 if __name__ == '__main__':
     unittest.main()
