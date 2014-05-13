@@ -16,9 +16,9 @@ class RateChecker(object):
         self.status = "OK"
         self.request = {}
 
-    def process_request(self, args):
+    def process_request(self, request):
         """The main function which processes request and returns result back."""
-        self._parse_args(args)
+        self._parse_args(request)
         self._get_data()
         return self._output()
 
@@ -152,28 +152,30 @@ class RateChecker(object):
                 data[result[row]['final_rates']] = 1
         return data
 
-    def _parse_args(self, args):
+    def _parse_args(self, request):
         """Parse API arguments"""
         # get initial values and check types
-        params = {param: self._check_type(param, args.get(param, None)) for param in PARAMETERS.keys()}
+        args = request.args
+        path = request.path[1:]
+        params = {param: self._check_type(path, param, args.get(param, None)) for param in PARAMETERS[path].keys()}
         self._set_ficos(params)
         # set defaults for None values
         for param in params.keys():
             if not params.get(param):
-                params[param] = PARAMETERS[param][2]
+                params[param] = PARAMETERS[path][param][2]
         # calculate loan_amt
         params['loan_amount'] = params['price'] - params['downpayment']
         self.request = {param: params[param] for param in params if params[param]}
         self.loanterm, _, self.pmttype = params['loan_type'].split(' ')
 
-    def _check_type(self, param, value):
+    def _check_type(self, path, param, value):
         """Check type of the value."""
         if value is None:
             return None
         try:
-            return PARAMETERS[param][0](value)
+            return PARAMETERS[path][param][0](value)
         except:
-            self.errors.append(PARAMETERS[param][1] % value)
+            self.errors.append(PARAMETERS[path][param][1] % value)
             self.status = "Error"
             return None
 

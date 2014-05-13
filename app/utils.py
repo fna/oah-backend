@@ -39,44 +39,58 @@ def is_int(value):
 
 # FIXME fico is not enough, need maxfico and minfico
 PARAMETERS = {
-    'downpayment': [
-        is_float,
-        'Downpayment must be a numeric value, |%s| provided',
-        20000,
-    ],
-    'loan_type': [
-        is_str,
-        'There was an error processing value |%s| for loan_type parameter',
-        '30 year fixed',
-    ],
-    'price': [
-        is_float,
-        'House price must be a numeric value, |%s| provided',
-        300000,
-    ],
-    'loan_amount': [
-        is_float,
-        'Loan amount must be a numeric value, |%s| provided',
-        280000,
-    ],
-    'state': [
-        is_state,
-        'State must be a state abbreviation, |%s| provided',
-        'DC',
-    ],
-    'fico': [
-        is_int,
-        'FICO must be a numeric, |%s| provided',
-        720
-    ],
-    'minfico': [
-        is_int,
-        'MinFICO must be an integer, |%s| provided',
-        600
-    ],
-    'maxfico': [
-        is_int,
-        'MaxFICO must be an integer, |%s| provided',
-        720
-    ]
+    'rate-checker': {
+        'downpayment': [
+            is_float,
+            'Downpayment must be a numeric value, |%s| provided',
+            20000,
+        ],
+        'loan_type': [
+            is_str,
+            'There was an error processing value |%s| for loan_type parameter',
+            '30 year fixed',
+        ],
+        'price': [
+            is_float,
+            'House price must be a numeric value, |%s| provided',
+            300000,
+        ],
+        'loan_amount': [
+            is_float,
+            'Loan amount must be a numeric value, |%s| provided',
+            280000,
+        ],
+        'state': [
+            is_state,
+            'State must be a state abbreviation, |%s| provided',
+            'DC',
+        ],
+        'fico': [
+            is_int,
+            'FICO must be a numeric, |%s| provided',
+            720
+        ],
+        'minfico': [
+            is_int,
+            'MinFICO must be an integer, |%s| provided',
+            600
+        ],
+        'maxfico': [
+            is_int,
+            'MaxFICO must be an integer, |%s| provided',
+            720
+        ]
+    },
+    'county-limit': {
+        'state': [
+            is_str,
+            'State must be a string, |%s| provided',
+            'DISTRICT OF COLUMBIA'
+        ],
+        'county': [
+            is_str,
+            'County name must be a string, |%s| provided',
+            'DISTRICT OF COL'
+        ]
+    }
 }

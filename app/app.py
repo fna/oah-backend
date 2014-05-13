@@ -13,7 +13,8 @@ def index():
 @app.route('/rate-checker')
 def rate_checker():
     rc = RateChecker()
-    return jsonify(**rc.process_request(request.args))
+    return jsonify(**rc.process_request(request))
+
 
 if __name__ == '__main__':
     app.debug = True
