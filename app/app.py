@@ -16,6 +16,11 @@ def rate_checker():
     return jsonify(**rc.process_request(request))
 
 
+@app.route('/county-limit')
+def county_limit():
+    rc = RateChecker()
+    return jsonify(**rc.process_request(request))
+
 if __name__ == '__main__':
     app.debug = True
     app.run(port=5000)

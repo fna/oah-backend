@@ -19,7 +19,11 @@ class RateChecker(object):
     def process_request(self, request):
         """The main function which processes request and returns result back."""
         self._parse_args(request)
-        self._get_data()
+        if request.path == '/rate-checker':
+            self.loanterm, _, self.pmttype = self.request['loan_type'].split(' ')
+            self._get_data()
+        elif request.path == '/county-limit':
+            self._get_county_limit()
         return self._output()
 
     def _output(self):
@@ -30,6 +34,32 @@ class RateChecker(object):
             "data": self.data,
             "errors": self.errors,
         }
+
+    def _get_county_limit(self):
+        """Get FHA and GSE county limits."""
+        query = """
+            SELECT
+                gse_limit, fha_limit
+            FROM
+                county_limits cl
+                INNER JOIN state s ON s.state_id = cl.state_id
+                INNER JOIN county c ON c.county_id = cl.county_id
+            WHERE
+                county_name = %s
+                AND state_name = %s
+        """
+        try:
+            dbname = os.environ.get('OAH_DB_NAME', 'pg_test')
+            dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
+            conn = psycopg2.connect('dbname=%s host=%s' % (dbname, dbhost))
+            cur = conn.cursor()
+            cur.execute(query, (self.request['county'], self.request['state']))
+            data = cur.fetchone()
+            self.data.append({'gse_limit': str(data[0]), 'fha_limit': str(data[1])})
+            cur.close()
+            conn.close()
+        except Exception as e:
+            return "Exception %s" % e
 
     def _get_data(self):
         """Calculate results."""
@@ -158,15 +188,16 @@ class RateChecker(object):
         args = request.args
         path = request.path[1:]
         params = {param: self._check_type(path, param, args.get(param, None)) for param in PARAMETERS[path].keys()}
-        self._set_ficos(params)
+        if path == 'rate-checker':
+            self._set_ficos(params)
         # set defaults for None values
         for param in params.keys():
             if not params.get(param):
                 params[param] = PARAMETERS[path][param][2]
         # calculate loan_amt
-        params['loan_amount'] = params['price'] - params['downpayment']
+        if path == 'rate-checker':
+            params['loan_amount'] = params['price'] - params['downpayment']
         self.request = {param: params[param] for param in params if params[param]}
-        self.loanterm, _, self.pmttype = params['loan_type'].split(' ')
 
     def _check_type(self, path, param, value):
         """Check type of the value."""

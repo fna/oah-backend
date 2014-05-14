@@ -6,8 +6,17 @@ STATE_ABBR = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 
               'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
               'DC']
 
+STATE_NAME = ['ALASKA', 'ALABAMA', 'ARKANSAS', 'AMERICAN SAMOA', 'ARIZONA', 'CALIFORNIA', 'COLORADO',
+              'CONNECTICUT', 'DISTRICT OF COLUMBIA', 'DELAWARE', 'FLORIDA', 'GEORGIA', 'GUAM', 'HAWAII', 'IOWA',
+              'IDAHO', 'ILLINOIS', 'INDIANA', 'KANSAS', 'KENTUCKY', 'LOUISIANA', 'MASSACHUSETTS', 'MARYLAND',
+              'MAINE', 'MICHIGAN', 'MINNESOTA', 'MISSOURI', '(NORTHERN) MARIANA ISLANDS', 'MISSISSIPPI', 'MONTANA',
+              'NORTH CAROLINA', 'NORTH DAKOTA', 'NEBRASKA', 'NEW HAMPSHIRE', 'NEW JERSEY', 'NEW MEXICO', 'NEVADA',
+              'NEW YORK', 'OHIO', 'OKLAHOMA', 'OREGON', 'PENNSYLVANIA', 'PUERTO RICO', 'RHODE ISLAND',
+              'SOUTH CAROLINA', 'SOUTH DAKOTA', 'TENNESSEE', 'TEXAS', 'UTAH', 'VIRGINIA', 'VIRGIN ISLANDS',
+              'VERMONT', 'WASHINGTON', 'WISCONSIN', 'WEST VIRGINIA', 'WYOMING', ]
 
-def is_state(value):
+
+def is_state_abbr(value):
     """Check that <value> is one of the USA state abbreviations."""
     if value.upper() in STATE_ABBR:
         return value.upper()
@@ -15,10 +24,18 @@ def is_state(value):
         raise Exception('Not a state abbreviation')
 
 
+def is_state_name(value):
+    """Check that <value> is one of the USA states."""
+    if value.upper() in STATE_NAME:
+        return value.upper()
+    else:
+        raise Exception('Not a state name')
+
+
 def is_str(value):
     """Check that <value> is a string"""
     if isinstance(value, (unicode, str)):
-        return value
+        return value.upper()
     else:
         raise Exception('Not a string')
 
@@ -61,7 +78,7 @@ PARAMETERS = {
             280000,
         ],
         'state': [
-            is_state,
+            is_state_abbr,
             'State must be a state abbreviation, |%s| provided',
             'DC',
         ],
@@ -83,7 +100,7 @@ PARAMETERS = {
     },
     'county-limit': {
         'state': [
-            is_str,
+            is_state_name,
             'State must be a string, |%s| provided',
             'DISTRICT OF COLUMBIA'
         ],

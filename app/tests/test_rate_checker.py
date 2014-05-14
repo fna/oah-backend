@@ -34,6 +34,17 @@ class RateCheckerTest(unittest.TestCase):
         self.assertIn('state', result['request'])
         self.assertEquals(result['request']['state'], 'VA')
 
+        dummy_request = dummy({}, '/county-limit')
+        result = self.rco.process_request(dummy_request)
+        self.assertIn('status', result)
+        self.assertIsInstance(result['status'], str)
+        self.assertIn('errors', result)
+        self.assertIsInstance(result['errors'], list)
+        self.assertIn('request', result)
+        self.assertIsInstance(result['request'], dict)
+        self.assertIn('state', result['request'])
+        self.assertEquals(result['request']['state'], 'DISTRICT OF COLUMBIA')
+
     def test_output(self):
         """Not much to test here."""
         self.rco.status = "OK"
@@ -51,12 +62,59 @@ class RateCheckerTest(unittest.TestCase):
         self.assertIn('errors', result)
         self.assertEquals(result['errors'], 'Errors')
 
-    # TODO: this is our most important function
     def test_get_data(self):
-        """_get_data"""
-        print "How to initialize test database so we can test this def?"
-        print
+        # is mostly about running the query, so I don't see need to test it.
         pass
+
+    def test_get_county_limit__valid(self):
+        """with valid data."""
+        self.rco.request = {
+            # will probably change, looks like wrong data
+            # but this is how it's in db right now
+            'county': 'DISTRICT OF COL',
+            'state': 'DISTRICT OF COLUMBIA',
+        }
+        self.rco._get_county_limit()
+        self.assertEqual(len(self.rco.data), 1)
+        self.assertIn('fha_limit', self.rco.data[0])
+        self.assertIn('gse_limit', self.rco.data[0])
+        # This might change when we load new data
+        self.assertEqual(self.rco.data[0]['fha_limit'], '625500.00')
+        self.assertEqual(self.rco.data[0]['gse_limit'], '625500.00')
+
+        self.rco.data = []
+        self.rco.request = {
+            'county': 'NORTHAMPTON',
+            'state': 'VIRGINIA',
+        }
+        self.rco._get_county_limit()
+        self.assertEqual(len(self.rco.data), 1)
+        self.assertIn('fha_limit', self.rco.data[0])
+        self.assertIn('gse_limit', self.rco.data[0])
+        # This might change when we load new data
+        self.assertEqual(self.rco.data[0]['fha_limit'], '271050.00')
+        self.assertEqual(self.rco.data[0]['gse_limit'], '417000.00')
+
+    def test_get_county_limit__invalid(self):
+        """with invalid data."""
+        self.rco.request = {
+            'county': 'NORTHAMPTON',
+        }
+        self.rco._get_county_limit()
+        self.assertEqual(len(self.rco.data), 0)
+
+        self.rco.request = {
+            'state': 'VIRGINIA',
+        }
+        self.rco._get_county_limit()
+        self.assertEqual(len(self.rco.data), 0)
+
+        self.rco.request = {
+            'state': 'ViRgINIA',
+            'county': 'NORTHAMPTON',
+        }
+        self.rco._get_county_limit()
+        self.assertEqual(len(self.rco.data), 0)
 
     def test_calculate_results__empty(self):
         """with an empty list"""
@@ -104,6 +162,16 @@ class RateCheckerTest(unittest.TestCase):
         self.assertIn('state', self.rco.request)
         self.assertEqual(self.rco.request['state'], params[path]['state'][2])
 
+        dummy_request.path = '/county-limit'
+        path = 'county-limit'
+        self.rco._parse_args(dummy_request)
+        self.assertIsInstance(self.rco.request, dict)
+        self.assertIn('county', self.rco.request)
+        self.assertEqual(self.rco.request['county'], params[path]['county'][2])
+        self.assertIsInstance(self.rco.request, dict)
+        self.assertIn('state', self.rco.request)
+        self.assertEqual(self.rco.request['state'], params[path]['state'][2])
+
     def test_parse_args__some(self):
         """not all parameters"""
         dummy_request = dummy({'downpayment': 10000, 'price': 100000, 'state': 'va'})
@@ -117,6 +185,13 @@ class RateCheckerTest(unittest.TestCase):
         self.assertEqual(result['loan_type'], '30 year fixed')
         self.assertEqual(result['minfico'], params[path]['minfico'][2])
         self.assertEqual(result['maxfico'], params[path]['maxfico'][2])
+
+        dummy_request = dummy({'state': 'VIRGINIA'}, '/county-limit')
+        path = 'county-limit'
+        self.rco._parse_args(dummy_request)
+        result = self.rco.request
+        self.assertEqual(result['state'], 'VIRGINIA')
+        self.assertEqual(result['county'], params[path]['county'][2])
 
     def test_parse_args__errors(self):
         """check that errors list is populated."""
@@ -173,7 +248,7 @@ class RateCheckerTest(unittest.TestCase):
         result = self.rco._check_type('rate-checker', 'downpayment', 10.10)
         self.assertEqual(result, 10.10)
         result = self.rco._check_type('rate-checker', 'loan_type', '30 year fixed')
-        self.assertEqual(result, '30 year fixed')
+        self.assertEqual(result, '30 YEAR FIXED')
         result = self.rco._check_type('rate-checker', 'price', '2000')
         self.assertEqual(result, 2000.0)
         result = self.rco._check_type('rate-checker', 'price', 2000)
