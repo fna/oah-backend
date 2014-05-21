@@ -51,7 +51,9 @@ class RateChecker(object):
         try:
             dbname = os.environ.get('OAH_DB_NAME', 'pg_test')
             dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
-            conn = psycopg2.connect('dbname=%s host=%s' % (dbname, dbhost))
+            dbuser = os.environ.get('OAH_DB_USER', 'user')
+            dbpass = os.environ.get('OAH_DB_PASS', 'password')
+            conn = psycopg2.connect('dbname=%s host=%s user=%s password=%s' % (dbname, dbhost, dbuser, dbpass))
             cur = conn.cursor()
             cur.execute(query, (self.request['county'], self.request['state']))
             data = cur.fetchone()
@@ -152,7 +154,9 @@ class RateChecker(object):
         try:
             dbname = os.environ.get('OAH_DB_NAME', 'pg_test')
             dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
-            conn = psycopg2.connect('dbname=%s host=%s' % (dbname, dbhost))
+            dbuser = os.environ.get('OAH_DB_USER', 'user')
+            dbpass = os.environ.get('OAH_DB_PASS', 'password')
+            conn = psycopg2.connect('dbname=%s host=%s user=%s password=%s' % (dbname, dbhost, dbuser, dbpass))
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cur.execute(query, qry_args)
             self.data = self._calculate_results(cur.fetchall())
@@ -166,7 +170,7 @@ class RateChecker(object):
         result = {}
         for row in data:
             row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
-            row['final_rates'] = row['adjvaluer'] + row['r_baserate']
+            row['final_rates'] = round(row['adjvaluer'] + row['r_baserate'], 3)
             if (
                 row['r_planid'] not in result or
                 result[row['r_planid']]['r_totalpoints'] > row['r_totalpoints'] or
@@ -190,14 +194,12 @@ class RateChecker(object):
         params = {param: self._check_type(path, param, args.get(param, None)) for param in PARAMETERS[path].keys()}
         if path == 'rate-checker':
             self._set_ficos(params)
+            self._set_loan_amount(params, PARAMETERS[path])
         # set defaults for None values
         for param in params.keys():
-            if not params.get(param):
+            if params.get(param) is None:
                 params[param] = PARAMETERS[path][param][2]
-        # calculate loan_amt
-        if path == 'rate-checker':
-            params['loan_amount'] = params['price'] - params['downpayment']
-        self.request = {param: params[param] for param in params if params[param]}
+        self.request = {param: params[param] for param in params if params[param] is not None}
 
     def _check_type(self, path, param, value):
         """Check type of the value."""
@@ -209,6 +211,22 @@ class RateChecker(object):
             self.errors.append(PARAMETERS[path][param][1] % value)
             self.status = "Error"
             return None
+
+    def _set_loan_amount(self, args, params):
+        """Set loan_amount, price and downpayment values."""
+        if args['loan_amount'] is not None and args['price'] is not None and args['downpayment'] is not None:
+            args['price'] = args['loan_amount'] + args['downpayment']
+        elif args['loan_amount'] and not args['price'] and not args['downpayment']:
+            args['price'] = args['loan_amount']
+            args['downpayment'] = 0
+        elif not args['loan_amount'] and args['price']:
+            if not args['downpayment']:
+                args['downpayment'] = 0
+            args['loan_amount'] = args['price'] - args['downpayment']
+        else:
+            args['loan_amount'] = params['loan_amount'][2]
+            args['price'] = params['price'][2]
+            args['downpayment'] = params['downpayment'][2]
 
     def _set_ficos(self, args):
         """Set minfico and maxfico values."""

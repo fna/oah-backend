@@ -280,6 +280,86 @@ class RateCheckerTest(unittest.TestCase):
         result = self.rco._check_type('rate-checker', 'maxfico', 99)
         self.assertEqual(result, 99)
 
+    def test_set_ficos__empty(self):
+        """with all values blank."""
+        data = {'minfico': None, 'maxfico': None, 'fico': None}
+        self.rco._set_ficos(data)
+        self.assertEqual(data['minfico'], None)
+        self.assertEqual(data['maxfico'], None)
+        self.assertTrue('fico' not in data)
+
+    def test_set_ficos__fico(self):
+        """with fico set."""
+        data = {'minfico': None, 'maxfico': None, 'fico': 100}
+        self.rco._set_ficos(data)
+        self.assertEqual(data['minfico'], 100)
+        self.assertEqual(data['maxfico'], 100)
+        self.assertTrue('fico' not in data)
+
+    def test_set_ficos__minfico(self):
+        """with minfico set."""
+        data = {'minfico': 200, 'maxfico': None, 'fico': 100}
+        self.rco._set_ficos(data)
+        self.assertEqual(data['minfico'], 200)
+        self.assertEqual(data['maxfico'], 200)
+        self.assertTrue('fico' not in data)
+
+    def test_set_ficos__maxfico(self):
+        """with minfico set."""
+        data = {'minfico': None, 'maxfico': 200, 'fico': 100}
+        self.rco._set_ficos(data)
+        self.assertEqual(data['minfico'], 200)
+        self.assertEqual(data['maxfico'], 200)
+        self.assertTrue('fico' not in data)
+
+    def test_set_ficos__both(self):
+        """with minfico and maxfico set."""
+        data = {'minfico': 300, 'maxfico': 200, 'fico': 100}
+        self.rco._set_ficos(data)
+        self.assertEqual(data['minfico'], 200)
+        self.assertEqual(data['maxfico'], 300)
+        self.assertTrue('fico' not in data)
+
+    def test_set_loan_amount__empty(self):
+        """with blank values."""
+        data = {'price': None, 'loan_amount': None, 'downpayment': None}
+        self.rco._set_loan_amount(data, params['rate-checker'])
+        self.assertEqual(data['price'], params['rate-checker']['price'][2])
+        self.assertEqual(data['downpayment'], params['rate-checker']['downpayment'][2])
+        self.assertEqual(data['loan_amount'], params['rate-checker']['loan_amount'][2])
+
+    def test_set_loan_amount__loan_amt(self):
+        """with loan_amount set."""
+        data = {'price': None, 'loan_amount': 10, 'downpayment': None}
+        self.rco._set_loan_amount(data, params['rate-checker'])
+        self.assertEqual(data['price'], 10)
+        self.assertEqual(data['downpayment'], 0)
+        self.assertEqual(data['loan_amount'], 10)
+
+    def test_set_loan_amount__price(self):
+        """with price set."""
+        data = {'price': 20, 'loan_amount': None, 'downpayment': None}
+        self.rco._set_loan_amount(data, params['rate-checker'])
+        self.assertEqual(data['price'], 20)
+        self.assertEqual(data['downpayment'], 0)
+        self.assertEqual(data['loan_amount'], 20)
+
+    def test_set_loan_amount__all(self):
+        """all fields set."""
+        data = {'price': 20, 'loan_amount': 40, 'downpayment': 10}
+        self.rco._set_loan_amount(data, params['rate-checker'])
+        self.assertEqual(data['price'], 50)
+        self.assertEqual(data['downpayment'], 10)
+        self.assertEqual(data['loan_amount'], 40)
+
+    def test_set_loan_amount_downpayment(self):
+        """with downpayment set."""
+        data = {'price': None, 'loan_amount': None, 'downpayment': 99}
+        self.rco._set_loan_amount(data, params['rate-checker'])
+        self.assertEqual(data['price'], params['rate-checker']['price'][2])
+        self.assertEqual(data['downpayment'], params['rate-checker']['downpayment'][2])
+        self.assertEqual(data['loan_amount'], params['rate-checker']['loan_amount'][2])
+
 
 if __name__ == '__main__':
     unittest.main()
