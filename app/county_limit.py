@@ -1,4 +1,17 @@
-from utils import PARAMETERS, parse_args, execute_query
+from utils import parse_args, execute_query, is_state_name, is_str
+
+PARAMETERS = {
+    'state': [
+        is_state_name,
+        'State must be a string, |%s| provided',
+        'DISTRICT OF COLUMBIA'
+    ],
+    'county': [
+        is_str,
+        'County name must be a string, |%s| provided',
+        'DISTRICT OF COL'
+    ]
+}
 
 
 class CountyLimit(object):
@@ -13,7 +26,7 @@ class CountyLimit(object):
 
     def process_request(self, request):
         """Get input, return results."""
-        self.request = parse_args(request)
+        self.request = parse_args(request, PARAMETERS)
         self._defaults()
         self._data()
         return self._output()
@@ -48,6 +61,6 @@ class CountyLimit(object):
     def _defaults(self):
         """Set default values."""
         # doesn't really make sense here
-        tmp = dict((k, v[2]) for k, v in PARAMETERS['county-limit'].iteritems())
+        tmp = dict((k, v[2]) for k, v in PARAMETERS.iteritems())
         tmp.update(self.request)
         self.request = tmp

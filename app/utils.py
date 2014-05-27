@@ -59,105 +59,24 @@ def is_arm(value):
         return str(value).replace('-', '/')
     raise Exception('Not an ARM type')
 
-# Serves two purposes: a simple parameters check
-# and a white list of accepted parameters
 
-# FIXME fico is not enough, need maxfico and minfico
-PARAMETERS = {
-    'rate-checker': {
-        'downpayment': [
-            is_float,
-            'Downpayment must be a numeric value, |%s| provided',
-            20000,
-        ],
-        'old-loan_type': [
-            is_str,
-            'There was an error processing value |%s| for loan_type parameter',
-            '30 year fixed',
-        ],
-        'loan_type': [
-            is_str,
-            'There was an error processing value |%s| for loan_type parameter',
-            'CONF',
-        ],
-        'rate_structure': [
-            is_str,
-            'There was an error processing value |%s| for rate_structure parameter',
-            'Fixed',
-        ],
-        'arm_type': [
-            is_arm,
-            'The value |%s| does not look like an ARM type parameter',
-            '3/1',
-        ],
-        'loan_term': [
-            is_int,
-            'Loan term must be a numeric value, |%s| provided',
-            30,
-        ],
-        'price': [
-            is_float,
-            'House price must be a numeric value, |%s| provided',
-            300000,
-        ],
-        'loan_amount': [
-            is_float,
-            'Loan amount must be a numeric value, |%s| provided',
-            280000,
-        ],
-        'state': [
-            is_state_abbr,
-            'State must be a state abbreviation, |%s| provided',
-            'DC',
-        ],
-        'fico': [
-            is_int,
-            'FICO must be a numeric, |%s| provided',
-            720
-        ],
-        'minfico': [
-            is_int,
-            'MinFICO must be an integer, |%s| provided',
-            600
-        ],
-        'maxfico': [
-            is_int,
-            'MaxFICO must be an integer, |%s| provided',
-            720
-        ]
-    },
-    'county-limit': {
-        'state': [
-            is_state_name,
-            'State must be a string, |%s| provided',
-            'DISTRICT OF COLUMBIA'
-        ],
-        'county': [
-            is_str,
-            'County name must be a string, |%s| provided',
-            'DISTRICT OF COL'
-        ]
-    }
-}
-
-
-def parse_args(request):
+def parse_args(request, PARAMETERS):
     """Parse API arguments"""
     args = request.args
     path = request.path[1:]
     params = {}
-    for param in PARAMETERS[path].keys():
-        params[param] = check_type(path, param, args.get(param, None))
+    for param in PARAMETERS.keys():
+        params[param] = check_type(path, param, args.get(param, None), PARAMETERS)
 
     return dict((k, v) for k, v in params.iteritems() if v is not None)
 
 
-def check_type(path, param, value):
+def check_type(path, param, value, PARAMETERS):
     """Check type of the value."""
     if value is None:
         return None
     try:
-        return PARAMETERS[path][param][0](value)
+        return PARAMETERS[param][0](value)
     except:
         return None
 

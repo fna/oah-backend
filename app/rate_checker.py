@@ -1,6 +1,69 @@
 import psycopg2.extras
 
-from utils import PARAMETERS, STATE_ABBR, parse_args, execute_query
+from utils import (STATE_ABBR, parse_args, execute_query, is_float, is_str, is_arm, is_int, is_state_abbr)
+
+PARAMETERS = {
+    'downpayment': [
+        is_float,
+        'Downpayment must be a numeric value, |%s| provided',
+        20000,
+    ],
+    'old-loan_type': [
+        is_str,
+        'There was an error processing value |%s| for loan_type parameter',
+        '30 year fixed',
+    ],
+    'loan_type': [
+        is_str,
+        'There was an error processing value |%s| for loan_type parameter',
+        'CONF',
+    ],
+    'rate_structure': [
+        is_str,
+        'There was an error processing value |%s| for rate_structure parameter',
+        'Fixed',
+    ],
+    'arm_type': [
+        is_arm,
+        'The value |%s| does not look like an ARM type parameter',
+        '3/1',
+    ],
+    'loan_term': [
+        is_int,
+        'Loan term must be a numeric value, |%s| provided',
+        30,
+    ],
+    'price': [
+        is_float,
+        'House price must be a numeric value, |%s| provided',
+        300000,
+    ],
+    'loan_amount': [
+        is_float,
+        'Loan amount must be a numeric value, |%s| provided',
+        280000,
+    ],
+    'state': [
+        is_state_abbr,
+        'State must be a state abbreviation, |%s| provided',
+        'DC',
+    ],
+    'fico': [
+        is_int,
+        'FICO must be a numeric, |%s| provided',
+        720
+    ],
+    'minfico': [
+        is_int,
+        'MinFICO must be an integer, |%s| provided',
+        600
+    ],
+    'maxfico': [
+        is_int,
+        'MaxFICO must be an integer, |%s| provided',
+        720
+    ]
+}
 
 
 class RateChecker(object):
@@ -16,7 +79,7 @@ class RateChecker(object):
 
     def process_request(self, request):
         """The main function which processes request and returns result back."""
-        self.request = parse_args(request)
+        self.request = parse_args(request, PARAMETERS)
         self._defaults()
         self._data()
         return self._output()
@@ -145,7 +208,7 @@ class RateChecker(object):
         """Set defaults, calculate intermediate values for args."""
         self._set_ficos()
         self._set_loan_amount()
-        tmp = dict((k, v[2]) for k, v in PARAMETERS['rate-checker'].iteritems())
+        tmp = dict((k, v[2]) for k, v in PARAMETERS.iteritems())
         tmp.update(self.request)
         self.request = tmp
 
@@ -161,9 +224,9 @@ class RateChecker(object):
                 self.request['downpayment'] = 0
             self.request['loan_amount'] = self.request['price'] - self.request['downpayment']
         else:
-            self.request['loan_amount'] = PARAMETERS['rate-checker']['loan_amount'][2]
-            self.request['price'] = PARAMETERS['rate-checker']['price'][2]
-            self.request['downpayment'] = PARAMETERS['rate-checker']['downpayment'][2]
+            self.request['loan_amount'] = PARAMETERS['loan_amount'][2]
+            self.request['price'] = PARAMETERS['price'][2]
+            self.request['downpayment'] = PARAMETERS['downpayment'][2]
 
     def _set_ficos(self):
         """Set minfico and maxfico values."""
