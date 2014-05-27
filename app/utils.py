@@ -17,6 +17,8 @@ STATE_NAME = ['ALASKA', 'ALABAMA', 'ARKANSAS', 'AMERICAN SAMOA', 'ARIZONA', 'CAL
               'SOUTH CAROLINA', 'SOUTH DAKOTA', 'TENNESSEE', 'TEXAS', 'UTAH', 'VIRGINIA', 'VIRGIN ISLANDS',
               'VERMONT', 'WASHINGTON', 'WISCONSIN', 'WEST VIRGINIA', 'WYOMING', ]
 
+errors = []
+
 
 def is_state_abbr(value):
     """Check that <value> is one of the USA state abbreviations."""
@@ -37,7 +39,7 @@ def is_state_name(value):
 def is_str(value):
     """Check that <value> is a string"""
     if isinstance(value, (unicode, str)):
-        return value.upper()
+        return value
     else:
         raise Exception('Not a string')
 
@@ -62,22 +64,27 @@ def is_arm(value):
 
 def parse_args(request, PARAMETERS):
     """Parse API arguments"""
+    global errors
+    errors = []
     args = request.args
-    path = request.path[1:]
     params = {}
     for param in PARAMETERS.keys():
-        params[param] = check_type(path, param, args.get(param, None), PARAMETERS)
+        params[param] = check_type(param, args.get(param, None), PARAMETERS)
 
-    return dict((k, v) for k, v in params.iteritems() if v is not None)
+    return {
+        'results': dict((k, v) for k, v in params.iteritems() if v is not None),
+        'errors': errors
+    }
 
 
-def check_type(path, param, value, PARAMETERS):
+def check_type(param, value, PARAMETERS):
     """Check type of the value."""
     if value is None:
         return None
     try:
         return PARAMETERS[param][0](value)
     except:
+        errors.append(PARAMETERS[param][1] % value)
         return None
 
 

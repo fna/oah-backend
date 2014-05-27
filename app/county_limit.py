@@ -26,7 +26,10 @@ class CountyLimit(object):
 
     def process_request(self, request):
         """Get input, return results."""
-        self.request = parse_args(request, PARAMETERS)
+        results = parse_args(request, PARAMETERS)
+        self.request = results['results']
+        if len(results['errors']) > 0:
+            self.errors = results['errors']
         self._defaults()
         self._data()
         return self._output()

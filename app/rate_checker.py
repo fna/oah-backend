@@ -8,11 +8,6 @@ PARAMETERS = {
         'Downpayment must be a numeric value, |%s| provided',
         20000,
     ],
-    'old-loan_type': [
-        is_str,
-        'There was an error processing value |%s| for loan_type parameter',
-        '30 year fixed',
-    ],
     'loan_type': [
         is_str,
         'There was an error processing value |%s| for loan_type parameter',
@@ -79,7 +74,10 @@ class RateChecker(object):
 
     def process_request(self, request):
         """The main function which processes request and returns result back."""
-        self.request = parse_args(request, PARAMETERS)
+        results = parse_args(request, PARAMETERS)
+        self.request = results['results']
+        if len(results['errors']) > 0:
+            self.errors = results['errors']
         self._defaults()
         self._data()
         return self._output()
@@ -211,6 +209,8 @@ class RateChecker(object):
         tmp = dict((k, v[2]) for k, v in PARAMETERS.iteritems())
         tmp.update(self.request)
         self.request = tmp
+        if self.request['rate_structure'].lower() == 'fixed':
+            del self.request['arm_type']
 
     def _set_loan_amount(self):
         """Set loan_amount, price and downpayment values."""
