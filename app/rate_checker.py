@@ -78,6 +78,7 @@ class RateChecker(object):
         self.request = results['results']
         if len(results['errors']) > 0:
             self.errors = results['errors']
+            self.status = 'Error'
         self._defaults()
         self._data()
         return self._output()
