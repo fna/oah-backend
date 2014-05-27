@@ -5,6 +5,14 @@ import sys
 sys.path.append(os.path.join(sys.path[0], '..'))
 
 import utils
+from rate_checker import PARAMETERS as params
+from county_limit import PARAMETERS as cl_params
+
+
+class dummy(object):
+    def __init__(self, args, path='/rate-checker'):
+        self.args = args
+        self.path = path
 
 
 class UtilsTest(unittest.TestCase):
@@ -46,3 +54,127 @@ class UtilsTest(unittest.TestCase):
         """with a number"""
         self.assertRaises(Exception, utils.is_str, 25)
         self.assertRaises(Exception, utils.is_str, True)
+
+    def test_is_float__empty(self):
+        """empty arg."""
+        self.assertRaises(Exception, utils.is_float, '')
+        self.assertRaises(Exception, utils.is_float, None)
+
+    def test_is_float__valid(self):
+        """valid value."""
+        result = utils.is_float(10.10)
+        self.assertEqual(result, 10.10)
+        result = utils.is_float('10.10')
+        self.assertEqual(result, 10.10)
+
+    def test_is_float__invalid(self):
+        """invalid value."""
+        self.assertRaises(Exception, utils.is_float, '10.1.0')
+
+    def test_is_int__empty(self):
+        """empty arg."""
+        self.assertRaises(Exception, utils.is_int, '')
+        self.assertRaises(Exception, utils.is_int, None)
+
+    def test_is_int__valid(self):
+        """valid value."""
+        result = utils.is_int(1)
+        self.assertEqual(result, 1)
+        result = utils.is_int('1')
+        self.assertEqual(result, 1)
+
+    def test_is_int__invalid(self):
+        """invalid value."""
+        self.assertRaises(Exception, utils.is_int, 'One')
+        self.assertRaises(Exception, utils.is_int, '1.1')
+        self.assertRaises(Exception, utils.is_int, 1.2)
+
+    def test_is_arm__empty(self):
+        """empty arg."""
+        self.assertRaises(Exception, utils.is_int, '')
+        self.assertRaises(Exception, utils.is_int, None)
+
+    def test_is_arm__valid(self):
+        """valid value"""
+        result = utils.is_arm('3-1')
+        self.assertEqual(result, '3/1')
+
+    def test_is_arm__invalid(self):
+        """invalid value"""
+        self.assertRaises(Exception, utils.is_arm, '3/1')
+        self.assertRaises(Exception, utils.is_arm, '31')
+        self.assertRaises(Exception, utils.is_arm, 31)
+
+    def test_parse_args__empty(self):
+        """with empty args."""
+        dummy_request = dummy({})
+        result = utils.parse_args(dummy_request, {})
+        self.assertTrue('results' in result)
+        self.assertEqual(result['results'], {})
+        self.assertTrue('errors' in result)
+        self.assertEqual(result['errors'], [])
+
+    def test_parse_args__valid(self):
+        """with valid args."""
+        dummy_request = dummy({'price': 1000, 'downpayment': 10})
+        result = utils.parse_args(dummy_request, params)
+        self.assertTrue('results' in result)
+        self.assertTrue(result['results']['price'], 1000)
+        self.assertTrue(result['results']['downpayment'], 10)
+
+    def test_parse_args__invalid(self):
+        """with invalid args."""
+        dummy_request = dummy({'price': 'Error Message', 'downpayment': 10})
+        result = utils.parse_args(dummy_request, params)
+        self.assertTrue('results' in result)
+        self.assertTrue(result['results']['downpayment'], 10)
+        self.assertTrue('price' not in result['results'])
+        self.assertTrue('errors' in result)
+        self.assertTrue('Error Message' in result['errors'][0])
+
+    def test_check_type__empty(self):
+        """with empty value."""
+        result = utils.check_type('item_name', None, params)
+        self.assertTrue(result is None)
+
+    def test_check_type__valid(self):
+        """with valid value."""
+        self.assertEqual(utils.check_type('downpayment', 10, params), 10.0)
+        self.assertEqual(utils.check_type('downpayment', '10', params), 10.0)
+        self.assertEqual(utils.check_type('downpayment', 10.90, params), 10.90)
+        self.assertEqual(utils.check_type('loan_type', 'conf', params), 'conf')
+        self.assertEqual(utils.check_type('rate_structure', 'Fixed', params), 'Fixed')
+        self.assertEqual(utils.check_type('arm_type', '3-1', params), '3/1')
+        self.assertEqual(utils.check_type('loan_term', '111', params), 111)
+        self.assertEqual(utils.check_type('loan_term', 114, params), 114)
+        self.assertEqual(utils.check_type('price', 20.10, params), 20.10)
+        self.assertEqual(utils.check_type('price', '20.20', params), 20.20)
+        self.assertEqual(utils.check_type('loan_amount', 19.99, params), 19.99)
+        self.assertEqual(utils.check_type('loan_amount', '29.99', params), 29.99)
+        self.assertEqual(utils.check_type('state', 'VA', params), 'VA')
+        self.assertEqual(utils.check_type('state', 'va', params), 'VA')
+        self.assertEqual(utils.check_type('state', 'Va', params), 'VA')
+        self.assertEqual(utils.check_type('fico', 100, params), 100)
+        self.assertEqual(utils.check_type('fico', '200', params), 200)
+        self.assertEqual(utils.check_type('minfico', 300, params), 300)
+        self.assertEqual(utils.check_type('minfico', '400', params), 400)
+        self.assertEqual(utils.check_type('maxfico', 500, params), 500)
+        self.assertEqual(utils.check_type('maxfico', '600', params), 600)
+
+    def test_check_type__invalid(self):
+        """with invalid value."""
+        self.assertTrue(utils.check_type('downpayment', 'String', params) is None)
+        self.assertTrue(utils.check_type('loan_type', 11, params) is None)
+        self.assertTrue(utils.check_type('rate_structure', 11, params) is None)
+        self.assertTrue(utils.check_type('arm_type', 'String', params) is None)
+        self.assertTrue(utils.check_type('loan_term', 'A Week', params) is None)
+        self.assertTrue(utils.check_type('price', 'String', params) is None)
+        self.assertTrue(utils.check_type('loan_amount', 'String', params) is None)
+        self.assertTrue(utils.check_type('state', 'Virginia', params) is None)
+        self.assertTrue(utils.check_type('fico', 'ABC', params) is None)
+        self.assertTrue(utils.check_type('minfico', 'ABC', params) is None)
+        self.assertTrue(utils.check_type('maxfico', 'ABC', params) is None)
+
+    def test_execute_query(self):
+        """no idea how to do that."""
+        pass

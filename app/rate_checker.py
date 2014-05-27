@@ -21,7 +21,7 @@ PARAMETERS = {
     'arm_type': [
         is_arm,
         'The value |%s| does not look like an ARM type parameter',
-        '3/1',
+        '3-1',
     ],
     'loan_term': [
         is_int,
@@ -211,6 +211,8 @@ class RateChecker(object):
         self.request = tmp
         if self.request['rate_structure'].lower() == 'fixed':
             del self.request['arm_type']
+        if 'fico' in self.request:
+            del self.request['fico']
 
     def _set_loan_amount(self):
         """Set loan_amount, price and downpayment values."""
@@ -232,7 +234,6 @@ class RateChecker(object):
         """Set minfico and maxfico values."""
         if 'minfico' not in self.request and 'maxfico' not in self.request and 'fico' in self.request:
             self.request['minfico'] = self.request['maxfico'] = self.request['fico']
-            del self.request['fico']
         # only one of them is set
         elif 'minfico' in self.request and 'maxfico' not in self.request:
             self.request['maxfico'] = self.request['minfico']
