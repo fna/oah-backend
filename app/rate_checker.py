@@ -20,7 +20,7 @@ class RateChecker(object):
         """The main function which processes request and returns result back."""
         self._parse_args(request)
         if request.path == '/rate-checker':
-            self.loanterm, _, self.pmttype = self.request['loan_type'].split(' ')
+            #self.loanterm, _, self.pmttype = self.request['loan_type'].split(' ')
             self._get_data()
         elif request.path == '/county-limit':
             self._get_county_limit()
@@ -49,7 +49,7 @@ class RateChecker(object):
                 AND state_name = %s
         """
         try:
-            dbname = os.environ.get('OAH_DB_NAME', 'pg_test')
+            dbname = os.environ.get('OAH_DB_NAME', 'oah')
             dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
             dbuser = os.environ.get('OAH_DB_USER', 'user')
             dbpass = os.environ.get('OAH_DB_PASS', 'password')
@@ -66,15 +66,14 @@ class RateChecker(object):
     def _get_data(self):
         """Calculate results."""
         data = []
-        minltv = 720
-        maxltv = 0
+        minltv = maxltv = float(self.request['loan_amount']) / self.request['price'] * 100
 
         qry_args = [self.request['loan_amount'], self.request['loan_amount'], self.request['minfico'],
                     self.request['maxfico'], minltv, maxltv, self.request['state'], self.request['loan_amount'],
                     self.request['loan_amount'], self.request['minfico'], self.request['maxfico'], minltv, maxltv,
                     self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
                     self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
-                    self.pmttype.upper(), self.loanterm]
+                    self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type']]
 
         query = """
             SELECT
@@ -146,13 +145,13 @@ class RateChecker(object):
                 AND (r.stateid=%s or r.stateid='')
                 -- AND r.loanpurpose='PURCH'
                 AND r.pmttype=%s
-                -- AND r.loantype='CONF'
                 AND r.loanterm=%s
+                AND r.loantype=%s
 
             ORDER BY r_Institution, r_BaseRate
         """
         try:
-            dbname = os.environ.get('OAH_DB_NAME', 'pg_test')
+            dbname = os.environ.get('OAH_DB_NAME', 'oah')
             dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
             dbuser = os.environ.get('OAH_DB_USER', 'user')
             dbpass = os.environ.get('OAH_DB_PASS', 'password')
@@ -163,6 +162,7 @@ class RateChecker(object):
             cur.close()
             conn.close()
         except Exception as e:
+            print "Exception: %s" % e
             return "Exception %s" % e
 
     def _calculate_results(self, data):
@@ -170,10 +170,10 @@ class RateChecker(object):
         result = {}
         for row in data:
             row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
-            row['final_rates'] = round(row['adjvaluer'] + row['r_baserate'], 3)
+            row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
             if (
                 row['r_planid'] not in result or
-                result[row['r_planid']]['r_totalpoints'] > row['r_totalpoints'] or
+                abs(result[row['r_planid']]['r_totalpoints']) > abs(row['r_totalpoints']) or
                 (result[row['r_planid']]['r_totalpoints'] == row['r_totalpoints'] and
                  result[row['r_planid']]['r_lock'] > row['r_lock'])
             ):
@@ -191,7 +191,10 @@ class RateChecker(object):
         # get initial values and check types
         args = request.args
         path = request.path[1:]
-        params = {param: self._check_type(path, param, args.get(param, None)) for param in PARAMETERS[path].keys()}
+        #TODO : remove params = {param: self._check_type(path, param, args.get(param, None)) for param in PARAMETERS[path].keys()}
+        params = {}
+        for param in PARAMETERS[path].keys():
+            params[param] = self._check_type(path, param, args.get(param, None))
         if path == 'rate-checker':
             self._set_ficos(params)
             self._set_loan_amount(params, PARAMETERS[path])
@@ -199,7 +202,14 @@ class RateChecker(object):
         for param in params.keys():
             if params.get(param) is None:
                 params[param] = PARAMETERS[path][param][2]
-        self.request = {param: params[param] for param in params if params[param] is not None}
+        # calculate loan_amt
+        if path == 'rate-checker':
+            params['loan_amount'] = params['price'] - params['downpayment']
+        #TODO remove self.request = {param: params[param] for param in params if params[param] is not None}
+        self.request = {}
+        for param in params:
+            if params[param] is not None:
+                self.request[param] = params[param]
 
     def _check_type(self, path, param, value):
         """Check type of the value."""
