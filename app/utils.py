@@ -51,6 +51,12 @@ def is_int(value):
         return int(value)
     raise Exception('Not an integer')
 
+
+def is_arm(value):
+    if re.match('^[0-9]{1,2}-1$', str(value)):
+        return str(value).replace('-', '/')
+    raise Exception('Not an ARM type')
+
 # Serves two purposes: a simple parameters check
 # and a white list of accepted parameters
 
@@ -62,10 +68,30 @@ PARAMETERS = {
             'Downpayment must be a numeric value, |%s| provided',
             20000,
         ],
-        'loan_type': [
+        'old-loan_type': [
             is_str,
             'There was an error processing value |%s| for loan_type parameter',
             '30 year fixed',
+        ],
+        'loan_type': [
+            is_str,
+            'There was an error processing value |%s| for loan_type parameter',
+            'CONF',
+        ],
+        'rate_structure': [
+            is_str,
+            'There was an error processing value |%s| for rate_structure parameter',
+            'Fixed',
+        ],
+        'arm_type': [
+            is_arm,
+            'The value |%s| does not look like an ARM type parameter',
+            '3/1',
+        ],
+        'loan_term': [
+            is_int,
+            'Loan term must be a numeric value, |%s| provided',
+            30,
         ],
         'price': [
             is_float,
