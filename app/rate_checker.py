@@ -1,8 +1,6 @@
-import psycopg2
 import psycopg2.extras
-import os
 
-from utils import PARAMETERS, STATE_ABBR
+from utils import PARAMETERS, STATE_ABBR, parse_args, execute_query
 
 
 class RateChecker(object):
@@ -18,12 +16,9 @@ class RateChecker(object):
 
     def process_request(self, request):
         """The main function which processes request and returns result back."""
-        self._parse_args(request)
-        if request.path == '/rate-checker':
-            #self.loanterm, _, self.pmttype = self.request['loan_type'].split(' ')
-            self._get_data()
-        elif request.path == '/county-limit':
-            self._get_county_limit()
+        self.request = parse_args(request)
+        self._defaults()
+        self._data()
         return self._output()
 
     def _output(self):
@@ -35,35 +30,7 @@ class RateChecker(object):
             "errors": self.errors,
         }
 
-    def _get_county_limit(self):
-        """Get FHA and GSE county limits."""
-        query = """
-            SELECT
-                gse_limit, fha_limit
-            FROM
-                county_limits cl
-                INNER JOIN state s ON s.state_id = cl.state_id
-                INNER JOIN county c ON c.county_id = cl.county_id
-            WHERE
-                county_name = %s
-                AND state_name = %s
-        """
-        try:
-            dbname = os.environ.get('OAH_DB_NAME', 'oah')
-            dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
-            dbuser = os.environ.get('OAH_DB_USER', 'user')
-            dbpass = os.environ.get('OAH_DB_PASS', 'password')
-            conn = psycopg2.connect('dbname=%s host=%s user=%s password=%s' % (dbname, dbhost, dbuser, dbpass))
-            cur = conn.cursor()
-            cur.execute(query, (self.request['county'], self.request['state']))
-            data = cur.fetchone()
-            self.data.append({'gse_limit': str(data[0]), 'fha_limit': str(data[1])})
-            cur.close()
-            conn.close()
-        except Exception as e:
-            return "Exception %s" % e
-
-    def _get_data(self):
+    def _data(self):
         """Calculate results."""
         data = []
         minltv = maxltv = float(self.request['loan_amount']) / self.request['price'] * 100
@@ -150,20 +117,8 @@ class RateChecker(object):
 
             ORDER BY r_Institution, r_BaseRate
         """
-        try:
-            dbname = os.environ.get('OAH_DB_NAME', 'oah')
-            dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
-            dbuser = os.environ.get('OAH_DB_USER', 'user')
-            dbpass = os.environ.get('OAH_DB_PASS', 'password')
-            conn = psycopg2.connect('dbname=%s host=%s user=%s password=%s' % (dbname, dbhost, dbuser, dbpass))
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cur.execute(query, qry_args)
-            self.data = self._calculate_results(cur.fetchall())
-            cur.close()
-            conn.close()
-        except Exception as e:
-            print "Exception: %s" % e
-            return "Exception %s" % e
+        rows = execute_query(query, qry_args, {'cursor_factory': psycopg2.extras.RealDictCursor})
+        self.data = self._calculate_results(rows)
 
     def _calculate_results(self, data):
         """Remove extra rows. Return rates with numbers."""
@@ -186,65 +141,39 @@ class RateChecker(object):
                 data[result[row]['final_rates']] = 1
         return data
 
-    def _parse_args(self, request):
-        """Parse API arguments"""
-        # get initial values and check types
-        args = request.args
-        path = request.path[1:]
-        #TODO : remove params = {param: self._check_type(path, param, args.get(param, None)) for param in PARAMETERS[path].keys()}
-        params = {}
-        for param in PARAMETERS[path].keys():
-            params[param] = self._check_type(path, param, args.get(param, None))
-        if path == 'rate-checker':
-            self._set_ficos(params)
-            self._set_loan_amount(params, PARAMETERS[path])
-        # set defaults for None values
-        for param in params.keys():
-            if params.get(param) is None:
-                params[param] = PARAMETERS[path][param][2]
-        # calculate loan_amt
-        if path == 'rate-checker':
-            params['loan_amount'] = params['price'] - params['downpayment']
-        #TODO remove self.request = {param: params[param] for param in params if params[param] is not None}
-        self.request = {}
-        for param in params:
-            if params[param] is not None:
-                self.request[param] = params[param]
+    def _defaults(self):
+        """Set defaults, calculate intermediate values for args."""
+        self._set_ficos()
+        self._set_loan_amount()
+        tmp = dict((k, v[2]) for k, v in PARAMETERS['rate-checker'].iteritems())
+        tmp.update(self.request)
+        self.request = tmp
 
-    def _check_type(self, path, param, value):
-        """Check type of the value."""
-        if value is None:
-            return None
-        try:
-            return PARAMETERS[path][param][0](value)
-        except:
-            self.errors.append(PARAMETERS[path][param][1] % value)
-            self.status = "Error"
-            return None
-
-    def _set_loan_amount(self, args, params):
+    def _set_loan_amount(self):
         """Set loan_amount, price and downpayment values."""
-        if args['loan_amount'] is not None and args['price'] is not None and args['downpayment'] is not None:
-            args['price'] = args['loan_amount'] + args['downpayment']
-        elif args['loan_amount'] and not args['price'] and not args['downpayment']:
-            args['price'] = args['loan_amount']
-            args['downpayment'] = 0
-        elif not args['loan_amount'] and args['price']:
-            if not args['downpayment']:
-                args['downpayment'] = 0
-            args['loan_amount'] = args['price'] - args['downpayment']
+        if 'loan_amount' in self.request and 'price' in self.request and 'downpayment' in self.request:
+            self.request['price'] = self.request['loan_amount'] + self.request['downpayment']
+        elif 'loan_amount' in self.request and 'price' not in self.request and 'downpayment' not in self.request:
+            self.request['price'] = self.request['loan_amount']
+            self.request['downpayment'] = 0
+        elif 'loan_amount' not in self.request and 'price' in self.request:
+            if 'downpayment' not in self.request:
+                self.request['downpayment'] = 0
+            self.request['loan_amount'] = self.request['price'] - self.request['downpayment']
         else:
-            args['loan_amount'] = params['loan_amount'][2]
-            args['price'] = params['price'][2]
-            args['downpayment'] = params['downpayment'][2]
+            self.request['loan_amount'] = PARAMETERS['rate-checker']['loan_amount'][2]
+            self.request['price'] = PARAMETERS['rate-checker']['price'][2]
+            self.request['downpayment'] = PARAMETERS['rate-checker']['downpayment'][2]
 
-    def _set_ficos(self, args):
+    def _set_ficos(self):
         """Set minfico and maxfico values."""
-        if not args['minfico'] and not args['maxfico'] and args['fico']:
-            args['minfico'] = args['maxfico'] = args['fico']
+        if 'minfico' not in self.request and 'maxfico' not in self.request and 'fico' in self.request:
+            self.request['minfico'] = self.request['maxfico'] = self.request['fico']
+            del self.request['fico']
         # only one of them is set
-        elif bool(args['minfico']) != bool(args['maxfico']):
-            args['maxfico'] = args['minfico'] = args['maxfico'] if args['maxfico'] else args['minfico']
-        elif args['minfico'] and args['maxfico'] and args['minfico'] > args['maxfico']:
-            args['minfico'], args['maxfico'] = args['maxfico'], args['minfico']
-        del args['fico']
+        elif 'minfico' in self.request and 'maxfico' not in self.request:
+            self.request['maxfico'] = self.request['minfico']
+        elif 'minfico' not in self.request and 'maxfico' in self.request:
+            self.request['minfico'] = self.request['maxfico']
+        elif 'minfico' in self.request and 'maxfico' in self.request and self.request['minfico'] > self.request['maxfico']:
+            self.request['minfico'], self.request['maxfico'] = self.request['maxfico'], self.request['minfico']

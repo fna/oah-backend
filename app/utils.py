@@ -1,4 +1,6 @@
 import re
+import os
+import psycopg2
 
 
 STATE_ABBR = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS',
@@ -137,3 +139,45 @@ PARAMETERS = {
         ]
     }
 }
+
+
+def parse_args(request):
+    """Parse API arguments"""
+    args = request.args
+    path = request.path[1:]
+    params = {}
+    for param in PARAMETERS[path].keys():
+        params[param] = check_type(path, param, args.get(param, None))
+
+    return dict((k, v) for k, v in params.iteritems() if v is not None)
+
+
+def check_type(path, param, value):
+    """Check type of the value."""
+    if value is None:
+        return None
+    try:
+        return PARAMETERS[path][param][0](value)
+    except:
+        return None
+
+
+def execute_query(query, query_args=None, options=None):
+    """Execute query."""
+    try:
+        dbname = os.environ.get('OAH_DB_NAME', 'oah')
+        dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
+        dbuser = os.environ.get('OAH_DB_USER', 'user')
+        dbpass = os.environ.get('OAH_DB_PASS', 'password')
+        conn = psycopg2.connect('dbname=%s host=%s user=%s password=%s' % (dbname, dbhost, dbuser, dbpass))
+        if options is not None:
+            cur = conn.cursor(**options)
+        else:
+            cur = conn.cursor()
+        cur.execute(query, query_args)
+        data = cur.fetchall()
+        cur.close()
+        conn.close()
+        return data
+    except Exception as e:
+        return "Exception: %s" % e

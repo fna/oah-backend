@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, make_response
 
 from rate_checker import RateChecker
+from county_limit import CountyLimit
 
 app = Flask('OaH Backend')
 
@@ -20,7 +21,7 @@ def rate_checker():
 
 @app.route('/county-limit')
 def county_limit():
-    rc = RateChecker()
+    rc = CountyLimit()
     resp = make_response(jsonify(**rc.process_request(request)))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
