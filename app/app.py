@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 
 from rate_checker import RateChecker
 
@@ -13,13 +13,17 @@ def index():
 @app.route('/rate-checker')
 def rate_checker():
     rc = RateChecker()
-    return jsonify(**rc.process_request(request))
+    resp = make_response(jsonify(**rc.process_request(request)))
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 
 @app.route('/county-limit')
 def county_limit():
     rc = RateChecker()
-    return jsonify(**rc.process_request(request))
+    resp = make_response(jsonify(**rc.process_request(request)))
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 if __name__ == '__main__':
     app.debug = True
