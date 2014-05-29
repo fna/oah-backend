@@ -1,3 +1,4 @@
+import oursql
 import psycopg2.extras
 
 from utils import (STATE_ABBR, parse_args, execute_query, is_float, is_str, is_arm, is_int, is_state_abbr)
@@ -106,19 +107,19 @@ class RateChecker(object):
 
         query = """
             SELECT
-                r.Institution AS r_Institution,
+                r.Institution AS r_institution,
 --                r.StateID AS r_StateID,
 --                r.LoanPurpose AS r_LoanPurpose,
 --                r.PmtType AS r_PmtType,
 --                r.LoanType AS r_LoanType,
 --                r.LoanTerm AS r_LoanTerm,
 --                r.IntAdjTerm AS r_IntAdjTerm,
-                r.Lock AS r_Lock,
-                r.BaseRate AS r_BaseRate,
-                r.TotalPoints AS r_TotalPoints,
+                r.Lock AS r_lock,
+                r.BaseRate AS r_baserate,
+                r.TotalPoints AS r_totalpoints,
 --                r.IO AS r_IO,
 --                r.OffersAgency AS r_OffersAgency,
-                r.Planid AS r_Planid,
+                r.Planid AS r_planid,
 --                r.ARMIndex AS r_ARMIndex,
 --                r.InterestRateAdjustmentCap AS r_InterestRateAdjustmentCap,
 --                r.AnnualCap AS r_AnnualCap,
@@ -132,54 +133,54 @@ class RateChecker(object):
 --                l.MaxFICO AS l_MaxFICO,
 --                l.MinLoanAmt AS l_MinLoanAmt,
 --                l.MaxLoanAmt AS l_MaxLoanAmt,
-                COALESCE(adjr.adjvalueR,0) AS adjvalueR,
-                COALESCE(adjp.adjvalueP,0) AS adjvalueP
+                COALESCE(adjr.adjvalueR,0) AS adjvaluer,
+                COALESCE(adjp.adjvalueP,0) AS adjvaluep
             FROM
-                rates r
-                INNER JOIN limits l ON r.planid = l.planid
+                oah_rates r
+                INNER JOIN oah_limits l ON r.planid = l.planid
                 LEFT OUTER JOIN (
                     SELECT
                         planid,
                         sum(adjvalue) adjvalueR
-                    FROM adjustments
+                    FROM oah_adjustments
                     WHERE
-                        MINLOANAMT <= %s AND %s <= MAXLOANAMT
-                        AND MINFICO<= %s AND MAXFICO >= %s
-                        AND %s >= minltv AND %s <= maxltv
+                        MINLOANAMT <= ? AND ? <= MAXLOANAMT
+                        AND MINFICO<= ? AND MAXFICO >= ?
+                        AND ? >= minltv AND ? <= maxltv
                         -- AND proptype=''
-                        AND (STATE=%s or STATE = '')
-                        -- AND AffectRateType='R'
+                        AND (STATE=? or STATE = '')
+                        AND AffectRateType='R'
                     GROUP BY planid
                 )  adjr ON adjr.PlanID = r.planid
                 LEFT OUTER JOIN (
                     SELECT
                         planid,
                         sum(adjvalue) adjvalueP
-                    FROM adjustments
+                    FROM oah_adjustments
                     WHERE
-                        MINLOANAMT <= %s AND %s <= MAXLOANAMT
-                        AND MINFICO<= %s AND MAXFICO >= %s
-                        AND %s >= minltv AND %s <= maxltv
+                        MINLOANAMT <= ? AND ? <= MAXLOANAMT
+                        AND MINFICO<= ? AND MAXFICO >= ?
+                        AND ? >= minltv AND ? <= maxltv
                         -- AND proptype=''
-                        AND (STATE=%s or STATE = '')
-                        -- AND AffectRateType='P'
+                        AND (STATE=? or STATE = '')
+                        AND AffectRateType='P'
                     GROUP BY planid
                 )  adjp ON adjp.PlanID = r.planid
 
             WHERE 1=1
                 -- Limits stuff
-                AND (l.minltv <= %s AND l.maxltv >= %s)
-                AND (l.minfico <= %s AND l.maxfico >= %s)
-                AND (l.minloanamt <= %s AND l.maxloanamt >= %s)
-                AND (r.stateid=%s or r.stateid='')
+                AND (l.minltv <= ? AND l.maxltv >= ?)
+                AND (l.minfico <= ? AND l.maxfico >= ?)
+                AND (l.minloanamt <= ? AND l.maxloanamt >= ?)
+                AND (r.stateid=? or r.stateid='')
                 -- AND r.loanpurpose='PURCH'
-                AND r.pmttype=%s
-                AND r.loanterm=%s
-                AND r.loantype=%s
+                AND r.pmttype=?
+                AND r.loanterm=?
+                AND r.loantype=?
 
             ORDER BY r_Institution, r_BaseRate
         """
-        rows = execute_query(query, qry_args, {'cursor_factory': psycopg2.extras.RealDictCursor})
+        rows = execute_query(query, qry_args, oursql.DictCursor)
         self.data = self._calculate_results(rows)
 
     def _calculate_results(self, data):

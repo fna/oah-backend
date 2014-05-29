@@ -51,12 +51,12 @@ class CountyLimit(object):
             SELECT
                 gse_limit, fha_limit
             FROM
-                county_limits cl
-                INNER JOIN state s ON s.state_id = cl.state_id
-                INNER JOIN county c ON c.county_id = cl.county_id
+                oah_county_limits cl
+                INNER JOIN oah_state s ON s.stateid = cl.stateid
+                INNER JOIN oah_county c ON c.countyid = cl.countyid
             WHERE
-                county_name = %s
-                AND state_name = %s
+                county_name = ?
+                AND state_name = ?
         """
         rows = execute_query(query, qry_args)
         if rows and rows[0]:

@@ -1,6 +1,6 @@
 import re
 import os
-import psycopg2
+import oursql
 
 
 STATE_ABBR = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS',
@@ -91,13 +91,13 @@ def check_type(param, value, PARAMETERS):
 def execute_query(query, query_args=None, options=None):
     """Execute query."""
     try:
-        dbname = os.environ.get('OAH_DB_NAME', 'oah')
+        dbname = os.environ.get('OAH_DB_NAME', 'dbname')
         dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
-        dbuser = os.environ.get('OAH_DB_USER', 'user')
+        dbuser = os.environ.get('OAH_DB_USER', 'dbuser')
         dbpass = os.environ.get('OAH_DB_PASS', 'password')
-        conn = psycopg2.connect('dbname=%s host=%s user=%s password=%s' % (dbname, dbhost, dbuser, dbpass))
+        conn = oursql.connect(host=dbhost, user=dbuser, passwd=dbpass, db=dbname)
         if options is not None:
-            cur = conn.cursor(**options)
+            cur = conn.cursor(options)
         else:
             cur = conn.cursor()
         cur.execute(query, query_args)
