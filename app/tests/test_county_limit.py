@@ -29,8 +29,8 @@ class CountyLimitTest(unittest.TestCase):
         self.assertTrue(isinstance(result['errors'], list))
         self.assertTrue('request' in result)
         self.assertTrue(isinstance(result['request'], dict))
-        self.assertTrue('state' in result['request'])
-        self.assertEquals(result['request']['state'], params['state'][2])
+        self.assertTrue('complete_fips' in result['request'])
+        self.assertEquals(result['request']['complete_fips'], params['/county-limit']['complete_fips'][2])
 
     def test_output(self):
         """nothing special"""
@@ -49,13 +49,11 @@ class CountyLimitTest(unittest.TestCase):
         self.assertTrue('errors' in result)
         self.assertEquals(result['errors'], 'Errors')
 
-    def test_data(self):
+    def test_county_limit_data(self):
         # not sure how
         pass
 
     def test_defaults(self):
-        self.cl.request['county'] = 'Some Name'
-        self.cl._defaults()
+        self.cl._defaults('/county-limit')
         data = self.cl.request
-        self.assertEqual(data['county'], 'Some Name')
-        self.assertEqual(data['state'], params['state'][2])
+        self.assertEqual(data['complete_fips'], params['/county-limit']['complete_fips'][2])

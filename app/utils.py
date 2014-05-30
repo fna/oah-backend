@@ -62,6 +62,18 @@ def is_arm(value):
     raise Exception('Not an ARM type')
 
 
+def is_fips(value):
+    if re.match('^[0-9]{5}$', str(value)):
+        return value
+    raise Exception('Not a fips')
+
+
+def is_state_fips(value):
+    if re.match('^[0-9]{2}$', str(value)):
+        return value
+    raise Exception('Not a fips')
+
+
 def parse_args(request, PARAMETERS):
     """Parse API arguments"""
     global errors

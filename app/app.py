@@ -20,6 +20,7 @@ def rate_checker():
 
 
 @app.route('/county-limit')
+@app.route('/county-limit/list')
 def county_limit():
     rc = CountyLimit()
     resp = make_response(jsonify(**rc.process_request(request)))

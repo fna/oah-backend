@@ -105,6 +105,40 @@ class UtilsTest(unittest.TestCase):
         self.assertRaises(Exception, utils.is_arm, '31')
         self.assertRaises(Exception, utils.is_arm, 31)
 
+    def test_is_fips__empty(self):
+        """empty arg."""
+        self.assertRaises(Exception, utils.is_fips, '')
+        self.assertRaises(Exception, utils.is_fips, None)
+
+    def test_is_fips__valid(self):
+        """valid value"""
+        result = utils.is_fips('02020')
+        self.assertEqual(result, '02020')
+
+    def test_is_fips__invalid(self):
+        """invalid value"""
+        self.assertRaises(Exception, utils.is_fips, 'Letters')
+        self.assertRaises(Exception, utils.is_fips, '11222A')
+        self.assertRaises(Exception, utils.is_fips, ' 11222')
+        self.assertRaises(Exception, utils.is_fips, '011222')
+
+    def test_is_state_fips__empty(self):
+        """empty arg."""
+        self.assertRaises(Exception, utils.is_state_fips, '')
+        self.assertRaises(Exception, utils.is_state_fips, None)
+
+    def test_is_state_fips__valid(self):
+        """valid value"""
+        result = utils.is_state_fips('02')
+        self.assertEqual(result, '02')
+
+    def test_is_state_fips__invalid(self):
+        """invalid value"""
+        self.assertRaises(Exception, utils.is_state_fips, 'Letters')
+        self.assertRaises(Exception, utils.is_fips, '11A')
+        self.assertRaises(Exception, utils.is_fips, ' 11')
+        self.assertRaises(Exception, utils.is_fips, '011')
+
     def test_parse_args__empty(self):
         """with empty args."""
         dummy_request = dummy({})
