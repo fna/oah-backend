@@ -67,13 +67,13 @@ PARAMETERS = {
     'lock': [
         is_int,
         'Lock value must be an integer, |%s| provided',
-        30
+        60
     ],
-    'property_type': [
-        is_str,
-        'There was an error processing |%s| for property type',
-        'CONDO',
-    ]
+    #'property_type': [
+    #    is_str,
+    #    'There was an error processing |%s| for property type',
+    #    'CONDO',
+    #]
 }
 
 
@@ -113,13 +113,24 @@ class RateChecker(object):
         data = []
         minltv = maxltv = float(self.request['loan_amount']) / self.request['price'] * 100
 
+        # lock times
+        locks = {
+            30: [0, 30],
+            45: [31, 45],
+            60: [46, 60],
+        }
+        minlock = maxlock = self.request['lock']
+        if self.request['lock'] in locks:
+            minlock = locks[self.request['lock']][0]
+            maxlock = locks[self.request['lock']][1]
+
         qry_args = [self.request['loan_amount'], self.request['loan_amount'], self.request['minfico'],
-                    self.request['maxfico'], minltv, maxltv, self.request['property_type'], self.request['state'],
-                    self.request['loan_amount'], self.request['loan_amount'], self.request['minfico'],
-                    self.request['maxfico'], minltv, maxltv, self.request['property_type'], self.request['state'],
-                    minltv, maxltv, self.request['minfico'], self.request['maxfico'], self.request['loan_amount'],
-                    self.request['loan_amount'], self.request['state'], self.request['rate_structure'].upper(),
-                    self.request['loan_term'], self.request['loan_type'], self.request['lock'], self.request['points']]
+                    self.request['maxfico'], minltv, maxltv, self.request['state'], self.request['loan_amount'],
+                    self.request['loan_amount'], self.request['minfico'], self.request['maxfico'], minltv, maxltv,
+                    self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
+                    self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
+                    self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type'],
+                    minlock, maxlock, self.request['points']]
 
         query = """
             SELECT
@@ -163,7 +174,7 @@ class RateChecker(object):
                         MINLOANAMT <= ? AND ? <= MAXLOANAMT
                         AND MINFICO<= ? AND MAXFICO >= ?
                         AND ? >= minltv AND ? <= maxltv
-                        AND (proptype = ? OR proptype='')
+                        -- AND (proptype = ? OR proptype='')
                         AND (STATE=? or STATE = '')
                         AND AffectRateType='R'
                     GROUP BY planid
@@ -177,7 +188,7 @@ class RateChecker(object):
                         MINLOANAMT <= ? AND ? <= MAXLOANAMT
                         AND MINFICO<= ? AND MAXFICO >= ?
                         AND ? >= minltv AND ? <= maxltv
-                        AND (proptype = ? OR proptype='')
+                        -- AND (proptype = ? OR proptype='')
                         AND (STATE=? or STATE = '')
                         AND AffectRateType='P'
                     GROUP BY planid
@@ -193,7 +204,7 @@ class RateChecker(object):
                 AND r.pmttype = ?
                 AND r.loanterm = ?
                 AND r.loantype = ?
-                AND r.lock = ?
+                AND r.lock BETWEEN ? AND ?
                 AND r.totalpoints = ?
 
             ORDER BY r_Institution, r_BaseRate
