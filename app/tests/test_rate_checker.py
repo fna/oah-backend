@@ -71,15 +71,17 @@ class RateCheckerTest(unittest.TestCase):
              'r_planid': 112, 'r_lock': 30},
             {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 1, 'r_baserate': 2,
              'r_planid': 112, 'r_lock': 15},
-            {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 1, 'r_baserate': 2,
+            {'adjvaluep': 1, 'r_totalpoints': -2, 'adjvaluer': 1, 'r_baserate': 2,
+             'r_planid': 113, 'r_lock': 15},
+            {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 2, 'r_baserate': 2,
              'r_planid': 113, 'r_lock': 15},
         ]
         result = self.rco._calculate_results(data)
         self.assertTrue(isinstance(result, dict))
         self.assertTrue('4.000' in result)
-        self.assertEqual(result['4.000'], 1)
+        self.assertEqual(result['4.000'], 2)
         self.assertTrue('3.000' in result)
-        self.assertEqual(result['3.000'], 2)
+        self.assertEqual(result['3.000'], 1)
 
     def test_defaults__empty(self):
         """Nothing is set in .request."""

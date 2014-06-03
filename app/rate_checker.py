@@ -221,6 +221,8 @@ class RateChecker(object):
             if (
                 row['r_planid'] not in result or
                 abs(result[row['r_planid']]['r_totalpoints']) > abs(row['r_totalpoints']) or
+                (abs(result[row['r_planid']]['r_totalpoints']) == abs(row['r_totalpoints']) and
+                    result[row['r_planid']]['r_totalpoints'] < row['r_totalpoints']) or
                 (result[row['r_planid']]['r_totalpoints'] == row['r_totalpoints'] and
                  result[row['r_planid']]['r_lock'] > row['r_lock'])
             ):
