@@ -206,10 +206,16 @@ class RateChecker(object):
                 AND r.loantype = ?
                 AND r.lock BETWEEN ? AND ?
                 AND r.totalpoints = ?
-
+                %s
             ORDER BY r_Institution, r_BaseRate
         """
-        rows = execute_query(query, qry_args, oursql.DictCursor)
+
+        additional_query = ""
+        if self.request['rate_structure'].upper() == 'ARM':
+            additional_query = "AND r.io = 0 AND r.intadjterm = ? "
+            qry_args.append(self.request['arm_type'][:self.request['arm_type'].index('/')])
+
+        rows = execute_query(query % additional_query, qry_args, oursql.DictCursor)
         self.data = self._calculate_results(rows)
 
     def _calculate_results(self, data):
