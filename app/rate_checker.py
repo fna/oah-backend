@@ -255,19 +255,21 @@ class RateChecker(object):
 
     def _set_loan_amount(self):
         """Set loan_amount, price and downpayment values."""
-        if 'loan_amount' in self.request and 'price' in self.request and 'downpayment' in self.request:
-            self.request['price'] = self.request['loan_amount'] + self.request['downpayment']
-        elif 'loan_amount' in self.request and 'price' not in self.request and 'downpayment' not in self.request:
-            self.request['price'] = self.request['loan_amount']
-            self.request['downpayment'] = 0
-        elif 'loan_amount' not in self.request and 'price' in self.request:
-            if 'downpayment' not in self.request:
-                self.request['downpayment'] = 0
+        if 'downpayment' in self.request:
+            if ('loan_amount' not in self.request) is not ('price' not in self.request):
+                self.request['price'] = self.request['price'] if 'price' in self.request else\
+                    self.request['loan_amount'] + self.request['downpayment']
+            elif 'price' not in self.request:
+                self.request['price'] = PARAMETERS['price'][2]
             self.request['loan_amount'] = self.request['price'] - self.request['downpayment']
         else:
-            self.request['loan_amount'] = PARAMETERS['loan_amount'][2]
-            self.request['price'] = PARAMETERS['price'][2]
-            self.request['downpayment'] = PARAMETERS['downpayment'][2]
+            if ('loan_amount' not in self.request) is not ('price' not in self.request):
+                self.request['price'] = self.request['price'] if 'price' in self.request else self.request['loan_amount']
+                self.request['loan_amount'] = self.request['price']
+            elif 'price' not in self.request:
+                self.request['price'] = PARAMETERS['price'][2]
+                self.request['loan_amount'] = PARAMETERS['loan_amount'][2]
+            self.request['downpayment'] = self.request['price'] - self.request['loan_amount']
 
     def _set_ficos(self):
         """Set minfico and maxfico values."""
