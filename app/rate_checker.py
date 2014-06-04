@@ -261,6 +261,9 @@ class RateChecker(object):
                     self.request['loan_amount'] + self.request['downpayment']
             elif 'price' not in self.request:
                 self.request['price'] = PARAMETERS['price'][2]
+            values = [self.request['downpayment'], self.request['price']]
+            values.sort()
+            self.request['downpayment'], self.request['price'] = values
             self.request['loan_amount'] = self.request['price'] - self.request['downpayment']
         else:
             if ('loan_amount' not in self.request) is not ('price' not in self.request):
