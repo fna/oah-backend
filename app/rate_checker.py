@@ -22,7 +22,7 @@ PARAMETERS = {
     'arm_type': [
         is_arm,
         'The value |%s| does not look like an ARM type parameter',
-        '3-1',
+        '3/1',
     ],
     'loan_term': [
         is_int,
