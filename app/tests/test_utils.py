@@ -135,9 +135,27 @@ class UtilsTest(unittest.TestCase):
     def test_is_state_fips__invalid(self):
         """invalid value"""
         self.assertRaises(Exception, utils.is_state_fips, 'Letters')
-        self.assertRaises(Exception, utils.is_fips, '11A')
-        self.assertRaises(Exception, utils.is_fips, ' 11')
-        self.assertRaises(Exception, utils.is_fips, '011')
+        self.assertRaises(Exception, utils.is_state_fips, '11A')
+        self.assertRaises(Exception, utils.is_state_fips, ' 11')
+        self.assertRaises(Exception, utils.is_state_fips, '011')
+
+    def test_is_email__empty(self):
+        """empty arg"""
+        self.assertRaises(Exception, utils.is_email, '')
+        self.assertRaises(Exception, utils.is_email, None)
+
+    def test_is_email__valid(self):
+        """valid value"""
+        result = utils.is_email('test@example.com')
+        self.assertEqual(result, 'test@example.com')
+        result = utils.is_email('te.st@exam.ple.com')
+        self.assertEqual(result, 'te.st@exam.ple.com')
+
+    def test_is_email__invalid(self):
+        """invalid value"""
+        self.assertRaises(Exception, utils.is_email, 'test@test@test.com')
+        self.assertRaises(Exception, utils.is_email, 'test@examplecom')
+        self.assertRaises(Exception, utils.is_email, 'test_example.com')
 
     def test_parse_args__empty(self):
         """with empty args."""

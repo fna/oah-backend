@@ -6,6 +6,8 @@ from county_limit import CountyLimit
 from feedback import Feedback
 
 app = Flask('OaH Backend')
+app.config.from_envvar('OAH_SETTINGS')
+
 mail = Mail(app)
 
 
