@@ -74,6 +74,13 @@ def is_state_fips(value):
     raise Exception('Not a fips')
 
 
+def is_email(value):
+    """ very basic check """
+    if re.match('^[^@]+@[^@]+\.[^@]+$', str(value)):
+        return value
+    raise Exception('Not an email address')
+
+
 def parse_args(request, PARAMETERS):
     """Parse API arguments"""
     global errors

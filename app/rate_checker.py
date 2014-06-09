@@ -1,5 +1,4 @@
 import oursql
-import psycopg2.extras
 
 from utils import (STATE_ABBR, parse_args, execute_query, is_float, is_str, is_arm, is_int, is_state_abbr)
 

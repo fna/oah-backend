@@ -1,9 +1,12 @@
 from flask import Flask, request, jsonify, make_response
+from flask.ext.mail import Mail
 
 from rate_checker import RateChecker
 from county_limit import CountyLimit
+from feedback import Feedback
 
 app = Flask('OaH Backend')
+mail = Mail(app)
 
 
 @app.route('/')
@@ -26,6 +29,15 @@ def county_limit():
     resp = make_response(jsonify(**rc.process_request(request)))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
+
+
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    fb = Feedback(mail=mail)
+    resp = make_response(jsonify(**fb.process_request(request)))
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
 
 if __name__ == '__main__':
     app.debug = True
