@@ -129,7 +129,7 @@ class RateChecker(object):
                     self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
                     self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
                     self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type'],
-                    minlock, maxlock, self.request['points']]
+                    minlock, maxlock, self.request['points'] - 0.5, self.request['points'] + 0.5]
 
         query = """
             SELECT
@@ -204,7 +204,7 @@ class RateChecker(object):
                 AND r.loanterm = ?
                 AND r.loantype = ?
                 AND r.lock BETWEEN ? AND ?
-                AND r.totalpoints = ?
+                AND r.totalpoints BETWEEN ? AND ?
                 %s
             ORDER BY r_Institution, r_BaseRate
         """
