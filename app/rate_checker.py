@@ -284,3 +284,7 @@ class RateChecker(object):
             self.request['minfico'] = self.request['maxfico']
         elif 'minfico' in self.request and 'maxfico' in self.request and self.request['minfico'] > self.request['maxfico']:
             self.request['minfico'], self.request['maxfico'] = self.request['maxfico'], self.request['minfico']
+
+        # so that results for minfico=700,maxfico=720 and minfico=720,maxfico=740 don't overlap
+        if self.request['maxfico'] != self.request['minfico']:
+            self.request['maxfico'] -= 1
