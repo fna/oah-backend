@@ -87,7 +87,6 @@ class RateCheckerTest(unittest.TestCase):
         """Nothing is set in .request."""
         self.rco._defaults()
         data = self.rco.request
-        self.assertEqual(data['downpayment'], params['downpayment'][2])
         self.assertEqual(data['loan_type'], params['loan_type'][2])
         self.assertEqual(data['rate_structure'], params['rate_structure'][2])
         self.assertEqual(data['loan_term'], params['loan_term'][2])
@@ -104,7 +103,6 @@ class RateCheckerTest(unittest.TestCase):
         self.rco.request['state'] = 'VA'
         self.rco._defaults()
         data = self.rco.request
-        self.assertEqual(data['downpayment'], params['downpayment'][2])
         self.assertEqual(data['loan_type'], params['loan_type'][2])
         self.assertEqual(data['rate_structure'], params['rate_structure'][2])
         self.assertEqual(data['loan_term'], params['loan_term'][2])
@@ -154,23 +152,20 @@ class RateCheckerTest(unittest.TestCase):
         self.rco._set_ficos()
         data = self.rco.request
         self.assertEqual(data['minfico'], 200)
-        self.assertEqual(data['maxfico'], 300)
+        self.assertEqual(data['maxfico'], 299)
 
     def test_set_loan_amount__empty(self):
         """with blank values."""
         self.rco._set_loan_amount()
         data = self.rco.request
-        self.assertEqual(data['price'], params['price'][2])
-        self.assertEqual(data['downpayment'], params['downpayment'][2])
-        self.assertEqual(data['loan_amount'], params['loan_amount'][2])
+        self.assertEqual(data, {})
 
     def test_set_loan_amount__loan_amt(self):
         """with loan_amount set."""
         self.rco.request = {'loan_amount': 10}
         self.rco._set_loan_amount()
         data = self.rco.request
-        self.assertEqual(data['price'], 10)
-        self.assertEqual(data['downpayment'], 0)
+        self.assertEqual(data['price'], 11)
         self.assertEqual(data['loan_amount'], 10)
 
     def test_set_loan_amount__price(self):
@@ -179,26 +174,15 @@ class RateCheckerTest(unittest.TestCase):
         self.rco._set_loan_amount()
         data = self.rco.request
         self.assertEqual(data['price'], 20)
-        self.assertEqual(data['downpayment'], 0)
-        self.assertEqual(data['loan_amount'], 20)
+        self.assertEqual(data['loan_amount'], 18)
 
     def test_set_loan_amount__all(self):
         """all fields set."""
-        self.rco.request = {'price': 20, 'loan_amount': 40, 'downpayment': 10}
+        self.rco.request = {'price': 20, 'loan_amount': 40}
         self.rco._set_loan_amount()
         data = self.rco.request
-        self.assertEqual(data['price'], 20)
-        self.assertEqual(data['downpayment'], 10)
-        self.assertEqual(data['loan_amount'], 10)
-
-    def test_set_loan_amount_downpayment(self):
-        """with downpayment set."""
-        self.rco.request = {'downpayment': 99}
-        self.rco._set_loan_amount()
-        data = self.rco.request
-        self.assertEqual(data['price'], params['price'][2])
-        self.assertEqual(data['downpayment'], 99)
-        self.assertEqual(data['loan_amount'], data['price'] - 99)
+        self.assertEqual(data['price'], 40)
+        self.assertEqual(data['loan_amount'], 20)
 
 
 if __name__ == '__main__':

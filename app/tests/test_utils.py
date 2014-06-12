@@ -172,14 +172,12 @@ class UtilsTest(unittest.TestCase):
         result = utils.parse_args(dummy_request, params)
         self.assertTrue('results' in result)
         self.assertTrue(result['results']['price'], 1000)
-        self.assertTrue(result['results']['downpayment'], 10)
 
     def test_parse_args__invalid(self):
         """with invalid args."""
         dummy_request = dummy({'price': 'Error Message', 'downpayment': 10})
         result = utils.parse_args(dummy_request, params)
         self.assertTrue('results' in result)
-        self.assertTrue(result['results']['downpayment'], 10)
         self.assertTrue('price' not in result['results'])
         self.assertTrue('errors' in result)
         self.assertTrue('Error Message' in result['errors'][0])
@@ -191,9 +189,6 @@ class UtilsTest(unittest.TestCase):
 
     def test_check_type__valid(self):
         """with valid value."""
-        self.assertEqual(utils.check_type('downpayment', 10, params), 10.0)
-        self.assertEqual(utils.check_type('downpayment', '10', params), 10.0)
-        self.assertEqual(utils.check_type('downpayment', 10.90, params), 10.90)
         self.assertEqual(utils.check_type('loan_type', 'conf', params), 'conf')
         self.assertEqual(utils.check_type('rate_structure', 'Fixed', params), 'Fixed')
         self.assertEqual(utils.check_type('arm_type', '3-1', params), '3/1')
@@ -215,7 +210,6 @@ class UtilsTest(unittest.TestCase):
 
     def test_check_type__invalid(self):
         """with invalid value."""
-        self.assertTrue(utils.check_type('downpayment', 'String', params) is None)
         self.assertTrue(utils.check_type('loan_type', 11, params) is None)
         self.assertTrue(utils.check_type('rate_structure', 11, params) is None)
         self.assertTrue(utils.check_type('arm_type', 'String', params) is None)

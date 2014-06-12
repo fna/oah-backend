@@ -3,11 +3,6 @@ import oursql
 from utils import (STATE_ABBR, parse_args, execute_query, is_float, is_str, is_arm, is_int, is_state_abbr)
 
 PARAMETERS = {
-    'downpayment': [
-        is_float,
-        'Downpayment must be a numeric value, |%s| provided',
-        20000,
-    ],
     'loan_type': [
         is_str,
         'There was an error processing value |%s| for loan_type parameter',
@@ -31,12 +26,12 @@ PARAMETERS = {
     'price': [
         is_float,
         'House price must be a numeric value, |%s| provided',
-        300000,
+        200000,
     ],
     'loan_amount': [
         is_float,
         'Loan amount must be a numeric value, |%s| provided',
-        280000,
+        180000,
     ],
     'state': [
         is_state_abbr,
@@ -51,12 +46,12 @@ PARAMETERS = {
     'minfico': [
         is_int,
         'MinFICO must be an integer, |%s| provided',
-        600
+        700
     ],
     'maxfico': [
         is_int,
         'MaxFICO must be an integer, |%s| provided',
-        720
+        719
     ],
     'points': [
         is_float,
@@ -253,25 +248,13 @@ class RateChecker(object):
             del self.request['fico']
 
     def _set_loan_amount(self):
-        """Set loan_amount, price and downpayment values."""
-        if 'downpayment' in self.request:
-            if ('loan_amount' not in self.request) is not ('price' not in self.request):
-                self.request['price'] = self.request['price'] if 'price' in self.request else\
-                    self.request['loan_amount'] + self.request['downpayment']
-            elif 'price' not in self.request:
-                self.request['price'] = PARAMETERS['price'][2]
-            values = [self.request['downpayment'], self.request['price']]
-            values.sort()
-            self.request['downpayment'], self.request['price'] = values
-            self.request['loan_amount'] = self.request['price'] - self.request['downpayment']
-        else:
-            if ('loan_amount' not in self.request) is not ('price' not in self.request):
-                self.request['price'] = self.request['price'] if 'price' in self.request else self.request['loan_amount']
-                self.request['loan_amount'] = self.request['price']
-            elif 'price' not in self.request:
-                self.request['price'] = PARAMETERS['price'][2]
-                self.request['loan_amount'] = PARAMETERS['loan_amount'][2]
-            self.request['downpayment'] = self.request['price'] - self.request['loan_amount']
+        """Set loan_amount and price values."""
+        if 'loan_amount' in self.request and 'price' not in self.request:
+            self.request['price'] = int(self.request['loan_amount'] * 1.1)
+        elif 'loan_amount' not in self.request and 'price' in self.request:
+            self.request['loan_amount'] = int(self.request['price'] * 0.9)
+        elif 'loan_amount' in self.request and 'price' in self.request and self.request['loan_amount'] > self.request['price']:
+            self.request['loan_amount'], self.request['price'] = [self.request['price'], self.request['loan_amount']]
 
     def _set_ficos(self):
         """Set minfico and maxfico values."""
@@ -286,5 +269,5 @@ class RateChecker(object):
             self.request['minfico'], self.request['maxfico'] = self.request['maxfico'], self.request['minfico']
 
         # so that results for minfico=700,maxfico=720 and minfico=720,maxfico=740 don't overlap
-        if self.request['maxfico'] != self.request['minfico']:
+        if 'maxfico' in self.request and 'minfico' in self.request and self.request['maxfico'] != self.request['minfico']:
             self.request['maxfico'] -= 1
