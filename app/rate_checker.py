@@ -16,7 +16,7 @@ PARAMETERS = {
     'arm_type': [
         is_arm,
         'The value |%s| does not look like an ARM type parameter',
-        '3/1',
+        '5/1',
     ],
     'loan_term': [
         is_int,
@@ -56,7 +56,7 @@ PARAMETERS = {
     'points': [
         is_float,
         'Points value must be a numeric, |%s| provided',
-        1.25
+        0
     ],
     'lock': [
         is_int,
