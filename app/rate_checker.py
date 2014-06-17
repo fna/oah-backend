@@ -194,7 +194,7 @@ class RateChecker(object):
                 AND (l.minfico <= ? AND l.maxfico >= ?)
                 AND (l.minloanamt <= ? AND l.maxloanamt >= ?)
                 AND (r.stateid=? or r.stateid='')
-                -- AND r.loanpurpose='PURCH'
+                AND r.loanpurpose='PURCH'
                 AND r.pmttype = ?
                 AND r.loanterm = ?
                 AND r.loantype = ?
@@ -220,10 +220,10 @@ class RateChecker(object):
             row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
             if (
                 row['r_planid'] not in result or
-                abs(result[row['r_planid']]['r_totalpoints']) > abs(row['r_totalpoints']) or
-                (abs(result[row['r_planid']]['r_totalpoints']) == abs(row['r_totalpoints']) and
-                    result[row['r_planid']]['r_totalpoints'] < row['r_totalpoints']) or
-                (result[row['r_planid']]['r_totalpoints'] == row['r_totalpoints'] and
+                abs(result[row['r_planid']]['final_points']) > abs(row['final_points']) or
+                (abs(result[row['r_planid']]['final_points']) == abs(row['final_points']) and
+                    result[row['r_planid']]['final_points'] < row['final_points']) or
+                (result[row['r_planid']]['final_points'] == row['final_points'] and
                  result[row['r_planid']]['r_lock'] > row['r_lock'])
             ):
                 result[row['r_planid']] = row
