@@ -219,7 +219,7 @@ class RateChecker(object):
             row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
             if row['final_points'] > maxpoints or row['final_points'] < minpoints:
                 continue
-            row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
+            row['final_rates'] = row['adjvaluer'] + row['r_baserate']
             if (
                 row['r_planid'] not in result or
                 abs(self.request['points'] - result[row['r_planid']]['final_points']) > abs(self.request['points'] - row['final_points']) or
@@ -231,10 +231,13 @@ class RateChecker(object):
                 result[row['r_planid']] = row
         data = {}
         for row in result.keys():
-            if result[row]['final_rates'] in data:
-                data[result[row]['final_rates']] += 1
+            # probably makes sense having a config var for 0.125 increment
+            # but it's only used in one place
+            bucket = result[row]['final_rates'] - result[row]['final_rates'] % 0.125
+            if bucket in data:
+                data[bucket] += 1
             else:
-                data[result[row]['final_rates']] = 1
+                data[bucket] = 1
         return data
 
     def _defaults(self):
