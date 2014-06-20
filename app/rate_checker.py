@@ -123,37 +123,16 @@ class RateChecker(object):
                     self.request['loan_amount'], self.request['minfico'], self.request['maxfico'], minltv, maxltv,
                     self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
                     self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
-                    self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type'],
+                    self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type'].upper(),
                     minlock, maxlock]
 
         query = """
             SELECT
                 r.Institution AS r_institution,
---                r.StateID AS r_StateID,
---                r.LoanPurpose AS r_LoanPurpose,
---                r.PmtType AS r_PmtType,
---                r.LoanType AS r_LoanType,
---                r.LoanTerm AS r_LoanTerm,
---                r.IntAdjTerm AS r_IntAdjTerm,
                 r.Lock AS r_lock,
                 r.BaseRate AS r_baserate,
                 r.TotalPoints AS r_totalpoints,
---                r.IO AS r_IO,
---                r.OffersAgency AS r_OffersAgency,
                 r.Planid AS r_planid,
---                r.ARMIndex AS r_ARMIndex,
---                r.InterestRateAdjustmentCap AS r_InterestRateAdjustmentCap,
---                r.AnnualCap AS r_AnnualCap,
---                r.LoanCap AS r_LoanCap,
---                r.ARMMargin AS r_ARMMargin,
---                r.AIValue AS r_AIValue,
---                l.Planid AS l_Planid,
---                l.MinLTV AS l_MinLTV,
---                l.MaxLTV AS l_MaxLTV,
---                l.MinFICO AS l_MinFICO,
---                l.MaxFICO AS l_MaxFICO,
---                l.MinLoanAmt AS l_MinLoanAmt,
---                l.MaxLoanAmt AS l_MaxLoanAmt,
                 COALESCE(adjr.adjvalueR,0) AS adjvaluer,
                 COALESCE(adjp.adjvalueP,0) AS adjvaluep
             FROM
@@ -164,12 +143,12 @@ class RateChecker(object):
                         planid,
                         sum(adjvalue) adjvalueR
                     FROM oah_adjustments
-                    WHERE
-                        MINLOANAMT <= ? AND ? <= MAXLOANAMT
-                        AND MINFICO<= ? AND MAXFICO >= ?
-                        AND ? >= minltv AND ? <= maxltv
-                        -- AND (proptype = ? OR proptype='')
-                        AND (STATE=? or STATE = '')
+                    WHERE 1=1
+                        AND (
+                            (MINLOANAMT <= ? AND MAXLOANAMT >= ? AND MINLOANAMT <> 0 AND MAXLOANAMT <> 999999999)
+                            OR (MINFICO <= ? AND MAXFICO >= ? AND (MINFICO > 0 OR (MINFICO <> 0 AND MAXFICO <> 999)) AND MINLTV <= ? AND MAXLTV >= ?)
+                            OR (STATE=?)
+                        )
                         AND AffectRateType='R'
                     GROUP BY planid
                 )  adjr ON adjr.PlanID = r.planid
@@ -178,12 +157,13 @@ class RateChecker(object):
                         planid,
                         sum(adjvalue) adjvalueP
                     FROM oah_adjustments
-                    WHERE
-                        MINLOANAMT <= ? AND ? <= MAXLOANAMT
-                        AND MINFICO<= ? AND MAXFICO >= ?
-                        AND ? >= minltv AND ? <= maxltv
-                        -- AND (proptype = ? OR proptype='')
-                        AND (STATE=? or STATE = '')
+                    WHERE 1=1
+                        AND (
+                            (MINLOANAMT <= ? AND MAXLOANAMT >= ? AND MINLOANAMT <> 0 AND MAXLOANAMT <> 999999999)
+                            OR (MINFICO <= ? AND MAXFICO >= ? AND (MINFICO > 0 OR (MINFICO <> 0 AND MAXFICO <> 999)) AND MINLTV <= ? AND MAXLTV >= ?)
+                            OR (STATE=?)
+                        )
+
                         AND AffectRateType='P'
                     GROUP BY planid
                 )  adjp ON adjp.PlanID = r.planid
@@ -193,12 +173,13 @@ class RateChecker(object):
                 AND (l.minltv <= ? AND l.maxltv >= ?)
                 AND (l.minfico <= ? AND l.maxfico >= ?)
                 AND (l.minloanamt <= ? AND l.maxloanamt >= ?)
-                AND (r.stateid=? or r.stateid='')
+                AND (r.stateid=?)
                 AND r.loanpurpose='PURCH'
                 AND r.pmttype = ?
                 AND r.loanterm = ?
                 AND r.loantype = ?
                 AND r.lock BETWEEN ? AND ?
+--                AND r.lock <= 60 and r.lock > 45
                 %s
             ORDER BY r_Institution, r_BaseRate
         """
@@ -211,31 +192,69 @@ class RateChecker(object):
         rows = execute_query(query % additional_query, qry_args, oursql.DictCursor)
         self.data = self._calculate_results(rows)
 
+    def bucket_results(self, result):
+        buckets = {}
+        for row in result:
+            if result[row]['final_rates'] in buckets:
+                buckets[result[row]['final_rates']] += 1
+            else:
+                buckets[result[row]['final_rates']] = 1
+        return buckets
+
+    def closer_to_zero(self, original_final_points, new_final_points):
+        if abs(new_final_points) < abs(original_final_points):
+            return True
+        elif abs(new_final_points) == abs(original_final_points):
+            return new_final_points > 0 and original_final_points < 0
+        return False
+           
     def _calculate_results(self, data):
-        """Remove extra rows. Return rates with numbers."""
-        result = {}
-        maxpoints, minpoints = [self.request['points'] + 0.5, self.request['points'] - 0.5]
+        maxpoints = self.request['points'] + 0.5
+        minpoints = self.request['points'] - 0.5
+
+        filtered_on_points = []
+
         for row in data:
             row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
-            if row['final_points'] > maxpoints or row['final_points'] < minpoints:
-                continue
-            row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
-            if (
-                row['r_planid'] not in result or
-                abs(self.request['points'] - result[row['r_planid']]['final_points']) > abs(self.request['points'] - row['final_points']) or
-                (abs(result[row['r_planid']]['final_points']) == abs(row['final_points']) and
-                    result[row['r_planid']]['final_points'] < row['final_points']) or
-                (result[row['r_planid']]['final_points'] == row['final_points'] and
-                 result[row['r_planid']]['r_lock'] > row['r_lock'])
-            ):
+
+            if row['final_points'] <= maxpoints and row['final_points'] >= minpoints:
+                row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
+                filtered_on_points.append(row)
+        
+        result = {} 
+        for row in filtered_on_points:
+            if row['r_planid'] not in result:
                 result[row['r_planid']] = row
-        data = {}
-        for row in result.keys():
-            if result[row]['final_rates'] in data:
-                data[result[row]['final_rates']] += 1
-            else:
-                data[result[row]['final_rates']] = 1
-        return data
+            elif self.closer_to_zero(result[row['r_planid']]['final_points'], row['final_points']):
+                result[row['r_planid']] = row
+
+        return self.bucket_results(result)
+
+    #def _calculate_results(self, data):
+    #    """Remove extra rows. Return rates with numbers."""
+    #    result = {}
+    #    maxpoints, minpoints = [self.request['points'] + 0.5, self.request['points'] - 0.5]
+    #    for row in data:
+    #        row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
+    #        if row['final_points'] > maxpoints or row['final_points'] < minpoints:
+    #            continue
+    #        row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
+    #        if (
+    #            row['r_planid'] not in result or
+    #            abs(self.request['points'] - result[row['r_planid']]['final_points']) > abs(self.request['points'] - row['final_points']) or
+    #            (abs(result[row['r_planid']]['final_points']) == abs(row['final_points']) and
+    #                result[row['r_planid']]['final_points'] < row['final_points']) or
+    #            (result[row['r_planid']]['final_points'] == row['final_points'] and
+    #             result[row['r_planid']]['r_lock'] > row['r_lock'])
+    #        ):
+    #            result[row['r_planid']] = row
+    #    data = {}
+    #    for row in result.keys():
+    #        if result[row]['final_rates'] in data:
+    #            data[result[row]['final_rates']] += 1
+    #        else:
+    #            data[result[row]['final_rates']] = 1
+    #    return data
 
     def _defaults(self):
         """Set defaults, calculate intermediate values for args."""
