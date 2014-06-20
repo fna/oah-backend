@@ -74,7 +74,7 @@ PARAMETERS = {
 
 
 class RateChecker(object):
-    """ This is the class that powers the rate checker. It embodies 
+    """ This is the class that powers the rate checker. It embodies
     all the business and querying logic for the rate checker. """
 
     def __init__(self):
@@ -124,13 +124,17 @@ class RateChecker(object):
             minlock = locks[self.request['lock']][0]
             maxlock = locks[self.request['lock']][1]
 
-        qry_args = [self.request['loan_amount'], self.request['loan_amount'], self.request['minfico'],
-                    self.request['maxfico'], minltv, maxltv, self.request['state'], self.request['loan_amount'],
-                    self.request['loan_amount'], self.request['minfico'], self.request['maxfico'], minltv, maxltv,
-                    self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
-                    self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
-                    self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type'].upper(),
-                    minlock, maxlock]
+        qry_args = [
+            self.request['loan_amount'], self.request['loan_amount'],
+            self.request['minfico'], self.request['maxfico'], minltv, maxltv,
+            self.request['state'], self.request['loan_amount'],
+            self.request['loan_amount'], self.request['minfico'],
+            self.request['maxfico'], minltv, maxltv, self.request['state'],
+            minltv, maxltv, self.request['minfico'], self.request['maxfico'],
+            self.request['loan_amount'], self.request['loan_amount'],
+            self.request['state'], self.request['rate_structure'].upper(),
+            self.request['loan_term'], self.request['loan_type'].upper(),
+            minlock, maxlock]
 
         query = """
             SELECT
@@ -223,7 +227,7 @@ class RateChecker(object):
         return False
 
     def _calculate_results(self, data):
-        """ Further apply filters to the results, based on calculations made 
+        """ Further apply filters to the results, based on calculations made
         during the SQL query. """
 
         maxpoints = self.request['points'] + 0.5
@@ -233,13 +237,12 @@ class RateChecker(object):
 
         for row in data:
             row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
-    
             final_points = row['final_points']
             if final_points <= maxpoints and final_points >= minpoints:
                 row['final_rates'] = "%.3f" % (
                     row['adjvaluer'] + row['r_baserate'])
                 filtered_on_points.append(row)
-        
+
         result = {}
         for row in filtered_on_points:
             if row['r_planid'] not in result:
@@ -277,7 +280,7 @@ class RateChecker(object):
             req[amount], req['price'] = req['price'], req[amount]
 
     def _set_ficos(self):
-        """ Set the min and max FICO scores """ 
+        """ Set the min and max FICO scores """
         req = self.request
 
         if 'minfico' not in req and 'maxfico' not in req and 'fico' in req:
