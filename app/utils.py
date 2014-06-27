@@ -114,7 +114,8 @@ def execute_query(query, query_args=None, options=None):
         dbhost = os.environ.get('OAH_DB_HOST', 'localhost')
         dbuser = os.environ.get('OAH_DB_USER', 'dbuser')
         dbpass = os.environ.get('OAH_DB_PASS', 'password')
-        conn = oursql.connect(host=dbhost, user=dbuser, passwd=dbpass, db=dbname)
+        conn = oursql.connect(
+            host=dbhost, user=dbuser, passwd=dbpass, db=dbname)
         if options is not None:
             cur = conn.cursor(options)
         else:

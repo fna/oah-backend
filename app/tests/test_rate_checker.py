@@ -21,19 +21,6 @@ class RateCheckerTest(unittest.TestCase):
     def setUp(self):
         self.rco = rc.RateChecker()
 
-    def test_process_request(self):
-        """trivial check that something's coming back."""
-        dummy_request = dummy({'state': 'VA'})
-        result = self.rco.process_request(dummy_request)
-        self.assertTrue('status' in result)
-        self.assertTrue(isinstance(result['status'], str))
-        self.assertTrue('errors' in result)
-        self.assertTrue(isinstance(result['errors'], list))
-        self.assertTrue('request' in result)
-        self.assertTrue(isinstance(result['request'], dict))
-        self.assertTrue('state' in result['request'])
-        self.assertEquals(result['request']['state'], 'VA')
-
     def test_output(self):
         """Not much to test here."""
         self.rco.status = "OK"
@@ -51,33 +38,26 @@ class RateCheckerTest(unittest.TestCase):
         self.assertTrue('errors' in result)
         self.assertEquals(result['errors'], 'Errors')
 
-    def test_data(self):
-        # is mostly about running the query, so I don't see need to test it.
-        pass
-
-    def test_calculate_results__empty(self):
-        """with an empty list"""
-        result = self.rco._calculate_results([])
-        self.assertEqual(result, {})
-
     def test_calculate_results__data(self):
         """Test _calculate_results"""
         data = [
-            {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 1, 'r_baserate': 3,
+            {'adjvaluep': 0.1, 'r_totalpoints': 0.2, 'adjvaluer': 1, 'r_baserate': 3,
              'r_planid': 111, 'r_lock': 30},
-            {'adjvaluep': 3, 'r_totalpoints': 4, 'adjvaluer': 3, 'r_baserate': 5,
+            {'adjvaluep': 0.3, 'r_totalpoints': 0.4, 'adjvaluer': 3, 'r_baserate': 5,
              'r_planid': 111, 'r_lock': 30},
-            {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 1, 'r_baserate': 3,
+            {'adjvaluep': 0.1, 'r_totalpoints': 0.2, 'adjvaluer': 1, 'r_baserate': 3,
              'r_planid': 112, 'r_lock': 30},
-            {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 1, 'r_baserate': 2,
+            {'adjvaluep': 0.1, 'r_totalpoints': 0.2, 'adjvaluer': 1, 'r_baserate': 2,
              'r_planid': 112, 'r_lock': 15},
-            {'adjvaluep': 1, 'r_totalpoints': -2, 'adjvaluer': 1, 'r_baserate': 2,
+            {'adjvaluep': 0.1, 'r_totalpoints': -0.2, 'adjvaluer': 1, 'r_baserate': 2,
              'r_planid': 113, 'r_lock': 15},
-            {'adjvaluep': 1, 'r_totalpoints': 2, 'adjvaluer': 2, 'r_baserate': 2,
+            {'adjvaluep': 0.1, 'r_totalpoints': 0.2, 'adjvaluer': 2, 'r_baserate': 2,
              'r_planid': 113, 'r_lock': 15},
         ]
+        self.rco.request['points'] = 0
         result = self.rco._calculate_results(data)
         self.assertTrue(isinstance(result, dict))
+
         self.assertTrue('4.000' in result)
         self.assertEqual(result['4.000'], 2)
         self.assertTrue('3.000' in result)

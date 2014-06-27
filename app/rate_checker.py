@@ -1,6 +1,8 @@
 import oursql
 
-from utils import (STATE_ABBR, parse_args, execute_query, is_float, is_str, is_arm, is_int, is_state_abbr)
+from utils import (
+    parse_args, execute_query, is_float, is_str, is_arm,
+    is_int, is_state_abbr)
 
 PARAMETERS = {
     'loan_type': [
@@ -72,18 +74,20 @@ PARAMETERS = {
 
 
 class RateChecker(object):
-    """No apparent reason."""
+    """ This is the class that powers the rate checker. It embodies
+    all the business and querying logic for the rate checker. """
 
     def __init__(self):
         """Set parameters to default values."""
-        # don't know yet what those parameters are
         self.errors = []
         self.data = []
         self.status = "OK"
         self.request = {}
 
     def process_request(self, request):
-        """The main function which processes request and returns result back."""
+        """The main function which processes request and returns result
+        back."""
+
         results = parse_args(request, PARAMETERS)
         self.request = results['results']
         if len(results['errors']) > 0:
@@ -105,7 +109,9 @@ class RateChecker(object):
     def _data(self):
         """Calculate results."""
         data = []
-        minltv = maxltv = float(self.request['loan_amount']) / self.request['price'] * 100
+
+        ltv = float(self.request['loan_amount']) / self.request['price'] * 100
+        minltv = maxltv = ltv
 
         # lock times
         locks = {
@@ -118,13 +124,17 @@ class RateChecker(object):
             minlock = locks[self.request['lock']][0]
             maxlock = locks[self.request['lock']][1]
 
-        qry_args = [self.request['loan_amount'], self.request['loan_amount'], self.request['minfico'],
-                    self.request['maxfico'], minltv, maxltv, self.request['state'], self.request['loan_amount'],
-                    self.request['loan_amount'], self.request['minfico'], self.request['maxfico'], minltv, maxltv,
-                    self.request['state'], minltv, maxltv, self.request['minfico'], self.request['maxfico'],
-                    self.request['loan_amount'], self.request['loan_amount'], self.request['state'],
-                    self.request['rate_structure'].upper(), self.request['loan_term'], self.request['loan_type'].upper(),
-                    minlock, maxlock]
+        qry_args = [
+            self.request['loan_amount'], self.request['loan_amount'],
+            self.request['minfico'], self.request['maxfico'], minltv, maxltv,
+            self.request['state'], self.request['loan_amount'],
+            self.request['loan_amount'], self.request['minfico'],
+            self.request['maxfico'], minltv, maxltv, self.request['state'],
+            minltv, maxltv, self.request['minfico'], self.request['maxfico'],
+            self.request['loan_amount'], self.request['loan_amount'],
+            self.request['state'], self.request['rate_structure'].upper(),
+            self.request['loan_term'], self.request['loan_type'].upper(),
+            minlock, maxlock]
 
         query = """
             SELECT
@@ -179,7 +189,6 @@ class RateChecker(object):
                 AND r.loanterm = ?
                 AND r.loantype = ?
                 AND r.lock BETWEEN ? AND ?
---                AND r.lock <= 60 and r.lock > 45
                 %s
             ORDER BY r_Institution, r_BaseRate
         """
@@ -187,12 +196,18 @@ class RateChecker(object):
         additional_query = ""
         if self.request['rate_structure'].upper() == 'ARM':
             additional_query = "AND r.io = 0 AND r.intadjterm = ? "
-            qry_args.append(self.request['arm_type'][:self.request['arm_type'].index('/')])
+            qry_args.append(
+                self.request['arm_type'][:self.request['arm_type'].index('/')])
 
-        rows = execute_query(query % additional_query, qry_args, oursql.DictCursor)
+        rows = execute_query(
+            query % additional_query, qry_args, oursql.DictCursor)
+
         self.data = self._calculate_results(rows)
 
     def bucket_results(self, result):
+        """ This API allows users to draw a histogram at the end, so we bucket
+        the results here. """
+
         buckets = {}
         for row in result:
             if result[row]['final_rates'] in buckets:
@@ -202,13 +217,19 @@ class RateChecker(object):
         return buckets
 
     def closer_to_zero(self, original_final_points, new_final_points):
+        """ For each plan, we pick the results with the final points that are
+        closest to zero. """
+
         if abs(new_final_points) < abs(original_final_points):
             return True
         elif abs(new_final_points) == abs(original_final_points):
             return new_final_points > 0 and original_final_points < 0
         return False
-           
+
     def _calculate_results(self, data):
+        """ Further apply filters to the results, based on calculations made
+        during the SQL query. """
+
         maxpoints = self.request['points'] + 0.5
         minpoints = self.request['points'] - 0.5
 
@@ -216,45 +237,21 @@ class RateChecker(object):
 
         for row in data:
             row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
-
-            if row['final_points'] <= maxpoints and row['final_points'] >= minpoints:
-                row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
+            final_points = row['final_points']
+            if final_points <= maxpoints and final_points >= minpoints:
+                row['final_rates'] = "%.3f" % (
+                    row['adjvaluer'] + row['r_baserate'])
                 filtered_on_points.append(row)
-        
-        result = {} 
+
+        result = {}
         for row in filtered_on_points:
             if row['r_planid'] not in result:
                 result[row['r_planid']] = row
-            elif self.closer_to_zero(result[row['r_planid']]['final_points'], row['final_points']):
-                result[row['r_planid']] = row
+            elif self.closer_to_zero(
+                result[row['r_planid']]['final_points'], row['final_points']):
+                    result[row['r_planid']] = row
 
         return self.bucket_results(result)
-
-    #def _calculate_results(self, data):
-    #    """Remove extra rows. Return rates with numbers."""
-    #    result = {}
-    #    maxpoints, minpoints = [self.request['points'] + 0.5, self.request['points'] - 0.5]
-    #    for row in data:
-    #        row['final_points'] = row['adjvaluep'] + row['r_totalpoints']
-    #        if row['final_points'] > maxpoints or row['final_points'] < minpoints:
-    #            continue
-    #        row['final_rates'] = "%.3f" % (row['adjvaluer'] + row['r_baserate'])
-    #        if (
-    #            row['r_planid'] not in result or
-    #            abs(self.request['points'] - result[row['r_planid']]['final_points']) > abs(self.request['points'] - row['final_points']) or
-    #            (abs(result[row['r_planid']]['final_points']) == abs(row['final_points']) and
-    #                result[row['r_planid']]['final_points'] < row['final_points']) or
-    #            (result[row['r_planid']]['final_points'] == row['final_points'] and
-    #             result[row['r_planid']]['r_lock'] > row['r_lock'])
-    #        ):
-    #            result[row['r_planid']] = row
-    #    data = {}
-    #    for row in result.keys():
-    #        if result[row]['final_rates'] in data:
-    #            data[result[row]['final_rates']] += 1
-    #        else:
-    #            data[result[row]['final_rates']] = 1
-    #    return data
 
     def _defaults(self):
         """Set defaults, calculate intermediate values for args."""
@@ -269,26 +266,39 @@ class RateChecker(object):
             del self.request['fico']
 
     def _set_loan_amount(self):
-        """Set loan_amount and price values."""
-        if 'loan_amount' in self.request and 'price' not in self.request:
-            self.request['price'] = int(self.request['loan_amount'] * 1.1)
-        elif 'loan_amount' not in self.request and 'price' in self.request:
-            self.request['loan_amount'] = int(self.request['price'] * 0.9)
-        elif 'loan_amount' in self.request and 'price' in self.request and self.request['loan_amount'] > self.request['price']:
-            self.request['loan_amount'], self.request['price'] = [self.request['price'], self.request['loan_amount']]
+        """ Set loan_amount and price values. If one is not provided, determine
+        using the other. """
+
+        req = self.request
+        amount = 'loan_amount'
+
+        if amount in req and 'price' not in req:
+            req['price'] = int(req[amount] * 1.1)
+        elif amount not in req and 'price' in req:
+            req[amount] = int(req['price'] * 0.9)
+        elif amount in req and 'price' in req and req[amount] > req['price']:
+            req[amount], req['price'] = req['price'], req[amount]
 
     def _set_ficos(self):
-        """Set minfico and maxfico values."""
-        if 'minfico' not in self.request and 'maxfico' not in self.request and 'fico' in self.request:
-            self.request['minfico'] = self.request['maxfico'] = self.request['fico']
-        # only one of them is set
-        elif 'minfico' in self.request and 'maxfico' not in self.request:
-            self.request['maxfico'] = self.request['minfico']
-        elif 'minfico' not in self.request and 'maxfico' in self.request:
-            self.request['minfico'] = self.request['maxfico']
-        elif 'minfico' in self.request and 'maxfico' in self.request and self.request['minfico'] > self.request['maxfico']:
-            self.request['minfico'], self.request['maxfico'] = self.request['maxfico'], self.request['minfico']
+        """ Set the min and max FICO scores """
+        req = self.request
 
-        # so that results for minfico=700,maxfico=720 and minfico=720,maxfico=740 don't overlap
-        if 'maxfico' in self.request and 'minfico' in self.request and self.request['maxfico'] != self.request['minfico']:
-            self.request['maxfico'] -= 1
+        if 'minfico' not in req and 'maxfico' not in req and 'fico' in req:
+            req['minfico'] = req['fico']
+            req['maxfico'] = req['fico']
+
+        # Only one of them is set
+        elif 'minfico' in req and 'maxfico' not in req:
+            req['maxfico'] = req['minfico']
+        elif 'minfico' not in req and 'maxfico' in req:
+            req['minfico'] = req['maxfico']
+        elif ('minfico' in req and 'maxfico' in req and
+                req['minfico'] > req['maxfico']):
+                req['minfico'], req['maxfico'] = req['maxfico'], req['minfico']
+
+        # so that results for minfico=700,maxfico=720 and
+        # minfico=720,maxfico=740 don't overlap
+
+        if ('maxfico' in req and 'minfico' in req and
+            req['maxfico'] != req['minfico']):
+                self.request['maxfico'] -= 1
