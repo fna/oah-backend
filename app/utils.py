@@ -17,8 +17,6 @@ STATE_NAME = ['ALASKA', 'ALABAMA', 'ARKANSAS', 'AMERICAN SAMOA', 'ARIZONA', 'CAL
               'SOUTH CAROLINA', 'SOUTH DAKOTA', 'TENNESSEE', 'TEXAS', 'UTAH', 'VIRGINIA', 'VIRGIN ISLANDS',
               'VERMONT', 'WASHINGTON', 'WISCONSIN', 'WEST VIRGINIA', 'WYOMING', ]
 
-errors = []
-
 
 def parse_state_abbr(value):
     """Check that <value> is one of the USA state abbreviations."""
@@ -71,12 +69,11 @@ def parse_email(value):
 
 def parse_args(request, PARAMETERS):
     """Parse API arguments"""
-    global errors
     errors = []
     args = request.args
     params = {}
     for param in PARAMETERS.keys():
-        params[param] = check_type(param, args.get(param, None), PARAMETERS)
+        params[param] = check_type(param, args.get(param, None), PARAMETERS, errors)
 
     return {
         'results': dict((k, v) for k, v in params.iteritems() if v is not None),
@@ -84,7 +81,7 @@ def parse_args(request, PARAMETERS):
     }
 
 
-def check_type(param, value, PARAMETERS):
+def check_type(param, value, PARAMETERS, errors):
     """Check type of the value."""
     if value is None:
         return None
