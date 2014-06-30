@@ -25,7 +25,7 @@ def parse_state_abbr(value):
     if value.upper() in STATE_ABBR:
         return value.upper()
     else:
-        raise Exception('Not a state abbreviation')
+        raise ValueError('Not a state abbreviation')
 
 
 def parse_state_name(value):
@@ -33,7 +33,7 @@ def parse_state_name(value):
     if value.upper() in STATE_NAME:
         return value.upper()
     else:
-        raise Exception('Not a state name')
+        raise ValueError('Not a state name')
 
 
 def parse_str(value):
@@ -41,32 +41,32 @@ def parse_str(value):
     if isinstance(value, (unicode, str)):
         return value
     else:
-        raise Exception('Not a string')
+        raise ValueError('Not a string')
 
 
 def parse_arm(value):
     if re.match('^[0-9]{1,2}-1$', str(value)):
         return str(value).replace('-', '/')
-    raise Exception('Not an ARM type')
+    raise ValueError('Not an ARM type')
 
 
 def parse_fips(value):
     if re.match('^[0-9]{5}$', str(value)):
         return value
-    raise Exception('Not a fips')
+    raise ValueError('Not a fips')
 
 
 def parse_state_fips(value):
     if re.match('^[0-9]{2}$', str(value)):
         return value
-    raise Exception('Not a fips')
+    raise ValueError('Not a fips')
 
 
 def parse_email(value):
     """ very basic check """
     if re.match('^[^@]+@[^@]+\.[^@]+$', str(value)):
         return value
-    raise Exception('Not an email address')
+    raise ValueError('Not an email address')
 
 
 def parse_args(request, PARAMETERS):

@@ -28,8 +28,8 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_state_abbr__invalid(self):
         """with bad data."""
-        self.assertRaises(Exception, utils.parse_state_abbr, 'Alabama')
-        self.assertRaises(Exception, utils.parse_state_abbr, 'AM')
+        self.assertRaises(ValueError, utils.parse_state_abbr, 'Alabama')
+        self.assertRaises(ValueError, utils.parse_state_abbr, 'AM')
 
     def test_parse_state_name__valid(self):
         """with a valid US state name."""
@@ -40,8 +40,8 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_state_name__invalid(self):
         """with bad data."""
-        self.assertRaises(Exception, utils.parse_state_name, 'Quebec')
-        self.assertRaises(Exception, utils.parse_state_name, 'DC')
+        self.assertRaises(ValueError, utils.parse_state_name, 'Quebec')
+        self.assertRaises(ValueError, utils.parse_state_name, 'DC')
 
     def test_parse_str__valid(self):
         """with a string"""
@@ -52,13 +52,13 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_str__number(self):
         """with a number"""
-        self.assertRaises(Exception, utils.parse_str, 25)
-        self.assertRaises(Exception, utils.parse_str, True)
+        self.assertRaises(ValueError, utils.parse_str, 25)
+        self.assertRaises(ValueError, utils.parse_str, True)
 
     def test_parse_arm__empty(self):
         """empty arg."""
-        self.assertRaises(Exception, utils.parse_arm, '')
-        self.assertRaises(Exception, utils.parse_arm, None)
+        self.assertRaises(ValueError, utils.parse_arm, '')
+        self.assertRaises(ValueError, utils.parse_arm, None)
 
     def test_parse_arm__valid(self):
         """valid value"""
@@ -67,14 +67,14 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_arm__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.parse_arm, '3/1')
-        self.assertRaises(Exception, utils.parse_arm, '31')
-        self.assertRaises(Exception, utils.parse_arm, 31)
+        self.assertRaises(ValueError, utils.parse_arm, '3/1')
+        self.assertRaises(ValueError, utils.parse_arm, '31')
+        self.assertRaises(ValueError, utils.parse_arm, 31)
 
     def test_parse_fips__empty(self):
         """empty arg."""
-        self.assertRaises(Exception, utils.parse_fips, '')
-        self.assertRaises(Exception, utils.parse_fips, None)
+        self.assertRaises(ValueError, utils.parse_fips, '')
+        self.assertRaises(ValueError, utils.parse_fips, None)
 
     def test_parse_fips__valid(self):
         """valid value"""
@@ -83,15 +83,15 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_fips__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.parse_fips, 'Letters')
-        self.assertRaises(Exception, utils.parse_fips, '11222A')
-        self.assertRaises(Exception, utils.parse_fips, ' 11222')
-        self.assertRaises(Exception, utils.parse_fips, '011222')
+        self.assertRaises(ValueError, utils.parse_fips, 'Letters')
+        self.assertRaises(ValueError, utils.parse_fips, '11222A')
+        self.assertRaises(ValueError, utils.parse_fips, ' 11222')
+        self.assertRaises(ValueError, utils.parse_fips, '011222')
 
     def test_parse_state_fips__empty(self):
         """empty arg."""
-        self.assertRaises(Exception, utils.parse_state_fips, '')
-        self.assertRaises(Exception, utils.parse_state_fips, None)
+        self.assertRaises(ValueError, utils.parse_state_fips, '')
+        self.assertRaises(ValueError, utils.parse_state_fips, None)
 
     def test_parse_state_fips__valid(self):
         """valid value"""
@@ -100,15 +100,15 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_state_fips__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.parse_state_fips, 'Letters')
-        self.assertRaises(Exception, utils.parse_state_fips, '11A')
-        self.assertRaises(Exception, utils.parse_state_fips, ' 11')
-        self.assertRaises(Exception, utils.parse_state_fips, '011')
+        self.assertRaises(ValueError, utils.parse_state_fips, 'Letters')
+        self.assertRaises(ValueError, utils.parse_state_fips, '11A')
+        self.assertRaises(ValueError, utils.parse_state_fips, ' 11')
+        self.assertRaises(ValueError, utils.parse_state_fips, '011')
 
     def test_parse_email__empty(self):
         """empty arg"""
-        self.assertRaises(Exception, utils.parse_email, '')
-        self.assertRaises(Exception, utils.parse_email, None)
+        self.assertRaises(ValueError, utils.parse_email, '')
+        self.assertRaises(ValueError, utils.parse_email, None)
 
     def test_parse_email__valid(self):
         """valid value"""
@@ -119,9 +119,9 @@ class UtilsTest(unittest.TestCase):
 
     def test_parse_email__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.parse_email, 'test@test@test.com')
-        self.assertRaises(Exception, utils.parse_email, 'test@examplecom')
-        self.assertRaises(Exception, utils.parse_email, 'test_example.com')
+        self.assertRaises(ValueError, utils.parse_email, 'test@test@test.com')
+        self.assertRaises(ValueError, utils.parse_email, 'test@examplecom')
+        self.assertRaises(ValueError, utils.parse_email, 'test_example.com')
 
     def test_parse_args__empty(self):
         """with empty args."""
