@@ -20,7 +20,7 @@ STATE_NAME = ['ALASKA', 'ALABAMA', 'ARKANSAS', 'AMERICAN SAMOA', 'ARIZONA', 'CAL
 errors = []
 
 
-def is_state_abbr(value):
+def parse_state_abbr(value):
     """Check that <value> is one of the USA state abbreviations."""
     if value.upper() in STATE_ABBR:
         return value.upper()
@@ -28,7 +28,7 @@ def is_state_abbr(value):
         raise Exception('Not a state abbreviation')
 
 
-def is_state_name(value):
+def parse_state_name(value):
     """Check that <value> is one of the USA states."""
     if value.upper() in STATE_NAME:
         return value.upper()
@@ -36,7 +36,7 @@ def is_state_name(value):
         raise Exception('Not a state name')
 
 
-def is_str(value):
+def parse_str(value):
     """Check that <value> is a string"""
     if isinstance(value, (unicode, str)):
         return value
@@ -44,37 +44,25 @@ def is_str(value):
         raise Exception('Not a string')
 
 
-def is_float(value):
-    if re.match('^[0-9\.]+$', str(value)):
-        return float(value)
-    raise Exception('Not a float')
-
-
-def is_int(value):
-    if re.match('^[0-9]+$', str(value)):
-        return int(value)
-    raise Exception('Not an integer')
-
-
-def is_arm(value):
+def parse_arm(value):
     if re.match('^[0-9]{1,2}-1$', str(value)):
         return str(value).replace('-', '/')
     raise Exception('Not an ARM type')
 
 
-def is_fips(value):
+def parse_fips(value):
     if re.match('^[0-9]{5}$', str(value)):
         return value
     raise Exception('Not a fips')
 
 
-def is_state_fips(value):
+def parse_state_fips(value):
     if re.match('^[0-9]{2}$', str(value)):
         return value
     raise Exception('Not a fips')
 
 
-def is_email(value):
+def parse_email(value):
     """ very basic check """
     if re.match('^[^@]+@[^@]+\.[^@]+$', str(value)):
         return value

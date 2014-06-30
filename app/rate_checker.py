@@ -1,72 +1,72 @@
 import oursql
 
 from utils import (
-    parse_args, execute_query, is_float, is_str, is_arm,
-    is_int, is_state_abbr)
+    parse_args, execute_query, parse_str, parse_arm,
+    parse_state_abbr)
 
 PARAMETERS = {
     'loan_type': [
-        is_str,
+        parse_str,
         'There was an error processing value |%s| for loan_type parameter',
         'CONF',
     ],
     'rate_structure': [
-        is_str,
+        parse_str,
         'There was an error processing value |%s| for rate_structure parameter',
         'Fixed',
     ],
     'arm_type': [
-        is_arm,
+        parse_arm,
         'The value |%s| does not look like an ARM type parameter',
         '5/1',
     ],
     'loan_term': [
-        is_int,
+        int,
         'Loan term must be a numeric value, |%s| provided',
         30,
     ],
     'price': [
-        is_float,
+        float,
         'House price must be a numeric value, |%s| provided',
         200000,
     ],
     'loan_amount': [
-        is_float,
+        float,
         'Loan amount must be a numeric value, |%s| provided',
         180000,
     ],
     'state': [
-        is_state_abbr,
+        parse_state_abbr,
         'State must be a state abbreviation, |%s| provided',
         'DC',
     ],
     'fico': [
-        is_int,
+        int,
         'FICO must be a numeric, |%s| provided',
         720
     ],
     'minfico': [
-        is_int,
+        int,
         'MinFICO must be an integer, |%s| provided',
         700
     ],
     'maxfico': [
-        is_int,
+        int,
         'MaxFICO must be an integer, |%s| provided',
         719
     ],
     'points': [
-        is_float,
+        float,
         'Points value must be a numeric, |%s| provided',
         0
     ],
     'lock': [
-        is_int,
+        int,
         'Lock value must be an integer, |%s| provided',
         60
     ],
     #'property_type': [
-    #    is_str,
+    #    parse_str,
     #    'There was an error processing |%s| for property type',
     #    'CONDO',
     #]
@@ -245,11 +245,12 @@ class RateChecker(object):
 
         result = {}
         for row in filtered_on_points:
+            #TODO: can be combined
             if row['r_planid'] not in result:
                 result[row['r_planid']] = row
             elif self.closer_to_zero(
-                result[row['r_planid']]['final_points'], row['final_points']):
-                    result[row['r_planid']] = row
+                    result[row['r_planid']]['final_points'], row['final_points']):
+                result[row['r_planid']] = row
 
         return self.bucket_results(result)
 
@@ -300,5 +301,5 @@ class RateChecker(object):
         # minfico=720,maxfico=740 don't overlap
 
         if ('maxfico' in req and 'minfico' in req and
-            req['maxfico'] != req['minfico']):
-                self.request['maxfico'] -= 1
+                req['maxfico'] != req['minfico']):
+            self.request['maxfico'] -= 1

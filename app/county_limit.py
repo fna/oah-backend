@@ -1,13 +1,13 @@
-from utils import parse_args, execute_query, is_state_fips, is_state_abbr
+from utils import parse_args, execute_query, parse_state_fips, parse_state_abbr
 
 PARAMETERS = {
     'state': [
-        is_state_abbr,
+        parse_state_abbr,
         'Value provided, |%s|, doesn\'t look like a state abbreviation',
         'DC'
     ],
     'state_fips': [
-        is_state_fips,
+        parse_state_fips,
         'State fips must be a two-digit string, |%s| provided',
         '11',
     ]

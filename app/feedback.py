@@ -1,4 +1,4 @@
-from utils import is_email
+from utils import parse_email
 from flask.ext.mail import Message
 
 import errno
@@ -30,7 +30,7 @@ class Feedback(object):
                 self.errors.append('Not all required fields were found.')
 
             try:
-                is_email(self.request['email'])
+                parse_email(self.request['email'])
             except Exception:
                 self.errors.append('|%s| is not a valid email address.' % self.request['email'])
 

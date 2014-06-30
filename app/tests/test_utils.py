@@ -17,145 +17,111 @@ class dummy(object):
 
 class UtilsTest(unittest.TestCase):
 
-    def test_is_state_abbr__valid(self):
+    def test_parse_state_abbr__valid(self):
         """with a valid USA state abbr."""
-        result = utils.is_state_abbr('AL')
+        result = utils.parse_state_abbr('AL')
         self.assertEquals(result, 'AL')
-        result = utils.is_state_abbr('Ak')
+        result = utils.parse_state_abbr('Ak')
         self.assertEquals(result, 'AK')
-        result = utils.is_state_abbr('az')
+        result = utils.parse_state_abbr('az')
         self.assertEquals(result, 'AZ')
 
-    def test_is_state_abbr__invalid(self):
+    def test_parse_state_abbr__invalid(self):
         """with bad data."""
-        self.assertRaises(Exception, utils.is_state_abbr, 'Alabama')
-        self.assertRaises(Exception, utils.is_state_abbr, 'AM')
+        self.assertRaises(Exception, utils.parse_state_abbr, 'Alabama')
+        self.assertRaises(Exception, utils.parse_state_abbr, 'AM')
 
-    def test_is_state_name__valid(self):
+    def test_parse_state_name__valid(self):
         """with a valid US state name."""
-        result = utils.is_state_name('VirGiNia')
+        result = utils.parse_state_name('VirGiNia')
         self.assertEqual(result, 'VIRGINIA')
-        result = utils.is_state_name('DIStrict oF Columbia')
+        result = utils.parse_state_name('DIStrict oF Columbia')
         self.assertEqual(result, 'DISTRICT OF COLUMBIA')
 
-    def test_is_state_name__invalid(self):
+    def test_parse_state_name__invalid(self):
         """with bad data."""
-        self.assertRaises(Exception, utils.is_state_name, 'Quebec')
-        self.assertRaises(Exception, utils.is_state_name, 'DC')
+        self.assertRaises(Exception, utils.parse_state_name, 'Quebec')
+        self.assertRaises(Exception, utils.parse_state_name, 'DC')
 
-    def test_is_str__valid(self):
+    def test_parse_str__valid(self):
         """with a string"""
-        result = utils.is_str('TEST')
+        result = utils.parse_str('TEST')
         self.assertEqual(result, 'TEST')
-        result = utils.is_str(u'TEST')
+        result = utils.parse_str(u'TEST')
         self.assertEqual(result, u'TEST')
 
-    def test_is_str__number(self):
+    def test_parse_str__number(self):
         """with a number"""
-        self.assertRaises(Exception, utils.is_str, 25)
-        self.assertRaises(Exception, utils.is_str, True)
+        self.assertRaises(Exception, utils.parse_str, 25)
+        self.assertRaises(Exception, utils.parse_str, True)
 
-    def test_is_float__empty(self):
+    def test_parse_arm__empty(self):
         """empty arg."""
-        self.assertRaises(Exception, utils.is_float, '')
-        self.assertRaises(Exception, utils.is_float, None)
+        self.assertRaises(Exception, utils.parse_arm, '')
+        self.assertRaises(Exception, utils.parse_arm, None)
 
-    def test_is_float__valid(self):
-        """valid value."""
-        result = utils.is_float(10.10)
-        self.assertEqual(result, 10.10)
-        result = utils.is_float('10.10')
-        self.assertEqual(result, 10.10)
-
-    def test_is_float__invalid(self):
-        """invalid value."""
-        self.assertRaises(Exception, utils.is_float, '10.1.0')
-
-    def test_is_int__empty(self):
-        """empty arg."""
-        self.assertRaises(Exception, utils.is_int, '')
-        self.assertRaises(Exception, utils.is_int, None)
-
-    def test_is_int__valid(self):
-        """valid value."""
-        result = utils.is_int(1)
-        self.assertEqual(result, 1)
-        result = utils.is_int('1')
-        self.assertEqual(result, 1)
-
-    def test_is_int__invalid(self):
-        """invalid value."""
-        self.assertRaises(Exception, utils.is_int, 'One')
-        self.assertRaises(Exception, utils.is_int, '1.1')
-        self.assertRaises(Exception, utils.is_int, 1.2)
-
-    def test_is_arm__empty(self):
-        """empty arg."""
-        self.assertRaises(Exception, utils.is_int, '')
-        self.assertRaises(Exception, utils.is_int, None)
-
-    def test_is_arm__valid(self):
+    def test_parse_arm__valid(self):
         """valid value"""
-        result = utils.is_arm('3-1')
+        result = utils.parse_arm('3-1')
         self.assertEqual(result, '3/1')
 
-    def test_is_arm__invalid(self):
+    def test_parse_arm__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.is_arm, '3/1')
-        self.assertRaises(Exception, utils.is_arm, '31')
-        self.assertRaises(Exception, utils.is_arm, 31)
+        self.assertRaises(Exception, utils.parse_arm, '3/1')
+        self.assertRaises(Exception, utils.parse_arm, '31')
+        self.assertRaises(Exception, utils.parse_arm, 31)
 
-    def test_is_fips__empty(self):
+    def test_parse_fips__empty(self):
         """empty arg."""
-        self.assertRaises(Exception, utils.is_fips, '')
-        self.assertRaises(Exception, utils.is_fips, None)
+        self.assertRaises(Exception, utils.parse_fips, '')
+        self.assertRaises(Exception, utils.parse_fips, None)
 
-    def test_is_fips__valid(self):
+    def test_parse_fips__valid(self):
         """valid value"""
-        result = utils.is_fips('02020')
+        result = utils.parse_fips('02020')
         self.assertEqual(result, '02020')
 
-    def test_is_fips__invalid(self):
+    def test_parse_fips__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.is_fips, 'Letters')
-        self.assertRaises(Exception, utils.is_fips, '11222A')
-        self.assertRaises(Exception, utils.is_fips, ' 11222')
-        self.assertRaises(Exception, utils.is_fips, '011222')
+        self.assertRaises(Exception, utils.parse_fips, 'Letters')
+        self.assertRaises(Exception, utils.parse_fips, '11222A')
+        self.assertRaises(Exception, utils.parse_fips, ' 11222')
+        self.assertRaises(Exception, utils.parse_fips, '011222')
 
-    def test_is_state_fips__empty(self):
+    def test_parse_state_fips__empty(self):
         """empty arg."""
-        self.assertRaises(Exception, utils.is_state_fips, '')
-        self.assertRaises(Exception, utils.is_state_fips, None)
+        self.assertRaises(Exception, utils.parse_state_fips, '')
+        self.assertRaises(Exception, utils.parse_state_fips, None)
 
-    def test_is_state_fips__valid(self):
+    def test_parse_state_fips__valid(self):
         """valid value"""
-        result = utils.is_state_fips('02')
+        result = utils.parse_state_fips('02')
         self.assertEqual(result, '02')
 
-    def test_is_state_fips__invalid(self):
+    def test_parse_state_fips__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.is_state_fips, 'Letters')
-        self.assertRaises(Exception, utils.is_state_fips, '11A')
-        self.assertRaises(Exception, utils.is_state_fips, ' 11')
-        self.assertRaises(Exception, utils.is_state_fips, '011')
+        self.assertRaises(Exception, utils.parse_state_fips, 'Letters')
+        self.assertRaises(Exception, utils.parse_state_fips, '11A')
+        self.assertRaises(Exception, utils.parse_state_fips, ' 11')
+        self.assertRaises(Exception, utils.parse_state_fips, '011')
 
-    def test_is_email__empty(self):
+    def test_parse_email__empty(self):
         """empty arg"""
-        self.assertRaises(Exception, utils.is_email, '')
-        self.assertRaises(Exception, utils.is_email, None)
+        self.assertRaises(Exception, utils.parse_email, '')
+        self.assertRaises(Exception, utils.parse_email, None)
 
-    def test_is_email__valid(self):
+    def test_parse_email__valid(self):
         """valid value"""
-        result = utils.is_email('test@example.com')
+        result = utils.parse_email('test@example.com')
         self.assertEqual(result, 'test@example.com')
-        result = utils.is_email('te.st@exam.ple.com')
+        result = utils.parse_email('te.st@exam.ple.com')
         self.assertEqual(result, 'te.st@exam.ple.com')
 
-    def test_is_email__invalid(self):
+    def test_parse_email__invalid(self):
         """invalid value"""
-        self.assertRaises(Exception, utils.is_email, 'test@test@test.com')
-        self.assertRaises(Exception, utils.is_email, 'test@examplecom')
-        self.assertRaises(Exception, utils.is_email, 'test_example.com')
+        self.assertRaises(Exception, utils.parse_email, 'test@test@test.com')
+        self.assertRaises(Exception, utils.parse_email, 'test@examplecom')
+        self.assertRaises(Exception, utils.parse_email, 'test_example.com')
 
     def test_parse_args__empty(self):
         """with empty args."""
